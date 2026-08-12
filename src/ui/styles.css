@@ -1,0 +1,194 @@
+/* Minimal, non-animated styling for the step-2 playable UI. Visual polish is a later build step. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #1b5e3a;
+  color: #fff;
+}
+
+.table {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+h1 {
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+.scoreboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.scoreboard-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 5rem;
+}
+
+.scoreboard-label {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.scoreboard-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.opponent-area,
+.human-area {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.opponent-area h2,
+.human-area h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 5.5rem;
+}
+
+.card {
+  width: 3.2rem;
+  height: 4.6rem;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #fff;
+  color: #111;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  cursor: not-allowed;
+  opacity: 0.6;
+  padding: 0;
+}
+
+.card[data-red='true'] {
+  color: #c0392b;
+}
+
+.card[data-selectable='true'] {
+  cursor: pointer;
+  opacity: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.card[data-selectable='true']:hover {
+  transform: translateY(-4px);
+}
+
+.card-rank {
+  font-size: 1rem;
+}
+
+.card-suit {
+  font-size: 1.1rem;
+}
+
+.card-back {
+  background: repeating-linear-gradient(45deg, #29527a, #29527a 4px, #1f3f5f 4px, #1f3f5f 8px);
+  border: 1px solid #0c1b2a;
+}
+
+.middle-area {
+  min-height: 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trick {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 4.6rem;
+}
+
+.trick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trick-label {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.trick-empty {
+  opacity: 0.6;
+  font-size: 0.9rem;
+}
+
+.thinking {
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.meld-choices {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.meld-choices-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+button {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #0006;
+  background: #f1c40f;
+  color: #111;
+  cursor: pointer;
+}
+
+.pass-button {
+  background: #ccc;
+}
+
+.result-banner {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
