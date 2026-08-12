@@ -27,7 +27,8 @@ A single-player Rubicon Bezique card game, playable entirely in the browser with
 |---|---|---|
 | Variant | Rubicon Bezique (128 cards, 4×32) | See rules spec §0 for sourcing |
 | Rubicon threshold | 1,000 points | Double-sourced (Pagat + whiteknucklecards) |
-| Brisques scoring | Count only for tie-breaking / rubicon-avoidance | Same |
+| Brisques scoring | Count only for tie-breaking / rubicon-avoidance | Triple-sourced (Pagat + whiteknucklecards + h2g2/Portland Club) |
+| Exact-tie resolution | Round down → tie → count brisques, round down → still tied → higher raw score rounds up (100-pt gap guaranteed) | whiteknucklecards.com; see rules spec §5/§7 |
 | Stack | React + TypeScript + Vite + Framer Motion | Engine stays framework-free and portable; UI benefits from React's state→render model matching our layering; Framer Motion for card/meld animation |
 | Engine design | Single plain serialisable state object, pure `applyMove(state, move) → newState`, engine always has full information | Makes cheat mode, tutor, and future multiplayer additive rather than special-cased (architecture plan §1–4) |
 | AI design | One weighted evaluation function per move, tiers = different weights, not different algorithms (revisit if needed) | Keeps tutor and AI sharing logic so they can't drift apart |

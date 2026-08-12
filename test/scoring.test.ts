@@ -91,6 +91,39 @@ describe('finalizeScoring', () => {
     expect(result.rubiconed).toBe(false);
   });
 
+  it('tie-break cascade: if brisques still leave the rounded totals tied, the higher raw score rounds up', () => {
+    // Meld-only: both 1150 -> round to 1100, tied. Brisques: player0 +10, player1 +40.
+    // Raw-with-brisques: 1160 vs 1190 -> both still round to 1100 -> still tied.
+    // Cascade: player1 (higher raw) rounds UP to 1200 instead of down, guaranteeing a 100 gap.
+    const state = makeScoringState({
+      players: [
+        { id: 0, hand: [], melds: [], score: 1150, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 1150, carteBlanchePoints: 0 },
+      ],
+      tricksWon: {
+        0: [c('SA-0', 'S', 'A')], // 10 pts
+        1: [c('HA-0', 'H', 'A'), c('DA-0', 'D', 'A'), c('CA-0', 'C', 'A'), c('S10-0', 'S', '10')], // 40 pts
+      },
+    });
+    const result = finalizeScoring(state).result!;
+    expect(result.winnerId).toBe(1);
+    expect(result.roundedScores).toEqual({ 0: 1100, 1: 1200 });
+  });
+
+  it('throws only in the fully degenerate case where raw scores are identical even after brisques', () => {
+    const state = makeScoringState({
+      players: [
+        { id: 0, hand: [], melds: [], score: 1150, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 1150, carteBlanchePoints: 0 },
+      ],
+      tricksWon: {
+        0: [c('SA-0', 'S', 'A')], // 10 pts
+        1: [c('HA-0', 'H', 'A')], // 10 pts, identical raw total to player 0
+      },
+    });
+    expect(() => finalizeScoring(state)).toThrow(/exact tie/);
+  });
+
   it('applies the rubicon bonus (1000 + sum of both rounded scores) when the loser stays under threshold', () => {
     const state = makeScoringState({
       players: [
