@@ -12,6 +12,7 @@ export const rubiconBezique: Ruleset = {
   suits: ['S', 'H', 'D', 'C'],
   rubiconThreshold: 1000,
   gameBonus: 500,
+  rubiconBonus: 1300,
   lastTrickBonus: 50,
   brisqueValue: 10,
   roundTo: 100,

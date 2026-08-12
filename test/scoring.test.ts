@@ -91,10 +91,9 @@ describe('finalizeScoring', () => {
     expect(result.rubiconed).toBe(false);
   });
 
-  it('tie-break cascade: if brisques still leave the rounded totals tied, the higher raw score rounds up', () => {
+  it('Law 61: a tie that survives even after counting brisques voids the hand — no winner', () => {
     // Meld-only: both 1150 -> round to 1100, tied. Brisques: player0 +10, player1 +40.
-    // Raw-with-brisques: 1160 vs 1190 -> both still round to 1100 -> still tied.
-    // Cascade: player1 (higher raw) rounds UP to 1200 instead of down, guaranteeing a 100 gap.
+    // Raw-with-brisques: 1160 vs 1190 -> both still round to 1100 -> still tied -> void.
     const state = makeScoringState({
       players: [
         { id: 0, hand: [], melds: [], score: 1150, carteBlanchePoints: 0 },
@@ -106,25 +105,13 @@ describe('finalizeScoring', () => {
       },
     });
     const result = finalizeScoring(state).result!;
-    expect(result.winnerId).toBe(1);
-    expect(result.roundedScores).toEqual({ 0: 1100, 1: 1200 });
+    expect(result.void).toBe(true);
+    expect(result.winnerId).toBeNull();
+    expect(result.winnerFinalScore).toBeNull();
+    expect(result.roundedScores).toEqual({ 0: 1100, 1: 1100 });
   });
 
-  it('throws only in the fully degenerate case where raw scores are identical even after brisques', () => {
-    const state = makeScoringState({
-      players: [
-        { id: 0, hand: [], melds: [], score: 1150, carteBlanchePoints: 0 },
-        { id: 1, hand: [], melds: [], score: 1150, carteBlanchePoints: 0 },
-      ],
-      tricksWon: {
-        0: [c('SA-0', 'S', 'A')], // 10 pts
-        1: [c('HA-0', 'H', 'A')], // 10 pts, identical raw total to player 0
-      },
-    });
-    expect(() => finalizeScoring(state)).toThrow(/exact tie/);
-  });
-
-  it('applies the rubicon bonus (1000 + sum of both rounded scores) when the loser stays under threshold', () => {
+  it('applies the rubicon bonus: winner + loser rounded scores + 1,300, when the loser stays under threshold', () => {
     const state = makeScoringState({
       players: [
         { id: 0, hand: [], melds: [], score: 1600, carteBlanchePoints: 0 },
@@ -133,7 +120,20 @@ describe('finalizeScoring', () => {
     });
     const result = finalizeScoring(state).result!;
     expect(result.rubiconed).toBe(true);
-    expect(result.winnerFinalScore).toBe(1000 + 1600 + 300);
+    expect(result.winnerFinalScore).toBe(1600 + 300 + 1300);
+  });
+
+  it('Law 59: a rubiconed loser whose rounded score is under 100 contributes 100, not 0', () => {
+    const state = makeScoringState({
+      players: [
+        { id: 0, hand: [], melds: [], score: 1600, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 50, carteBlanchePoints: 0 }, // rounds down to 0
+      ],
+    });
+    const result = finalizeScoring(state).result!;
+    expect(result.roundedScores[1]).toBe(0);
+    expect(result.rubiconed).toBe(true);
+    expect(result.winnerFinalScore).toBe(1600 + 100 + 1300); // loser's 0 floored to 100 for this addition
   });
 
   it('throws if called outside the scoring phase', () => {

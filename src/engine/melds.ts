@@ -75,15 +75,16 @@ export interface DeclarableMeld {
 
 /**
  * Fresh (non-replacement) meld options declarable right now from the player's hand,
- * respecting the same-class reuse rule (rules spec §3): a card already scored in a
- * class can't be used in a new declaration of that class again, though it remains
- * free to use in other classes or (separately) in a replacement re-declaration.
+ * respecting the same-class reuse rule (rules spec §3, Portland Club Laws 36-38):
+ * a card already scored in a class can move UP to a superior combination of that
+ * class, but can never move back DOWN to an inferior one. It remains free to use
+ * in other classes entirely, or (separately) in a replacement re-declaration.
  */
 export function findFreshDeclarableMelds(
   ruleset: Ruleset,
   hand: Card[],
   trumpSuit: Suit | null,
-  cardMeldClassUsage: Record<string, MeldClass[]>,
+  cardMeldClassUsage: Record<string, Partial<Record<MeldClass, number>>>,
 ): DeclarableMeld[] {
   const bySuitRank = groupBySuitRank(hand);
   const results: DeclarableMeld[] = [];
@@ -95,11 +96,13 @@ export function findFreshDeclarableMelds(
     const chosen: string[] = [];
 
     for (const slot of slots) {
-      const candidates = (bySuitRank.get(slotKey(slot)) ?? []).filter(
-        (c) => !usedCardIds.has(c.id) && !cardMeldClassUsage[c.id]?.includes(def.class),
-      );
+      const candidates = (bySuitRank.get(slotKey(slot)) ?? []).filter((c) => {
+        if (usedCardIds.has(c.id)) return false;
+        const highestRankScored = cardMeldClassUsage[c.id]?.[def.class];
+        return highestRankScored === undefined || def.classRank >= highestRankScored;
+      });
       const pick = candidates[0];
-      if (!pick) return; // can't fill this slot without reusing a class-blocked or already-chosen card
+      if (!pick) return; // can't fill this slot without downgrading a card or reusing an already-chosen one
       usedCardIds.add(pick.id);
       chosen.push(pick.id);
     }
@@ -196,7 +199,7 @@ export function findAllDeclarableMelds(
   hand: Card[],
   existingMelds: MeldDeclaration[],
   trumpSuit: Suit | null,
-  cardMeldClassUsage: Record<string, MeldClass[]>,
+  cardMeldClassUsage: Record<string, Partial<Record<MeldClass, number>>>,
 ): DeclarableMeld[] {
   return [
     ...findFreshDeclarableMelds(ruleset, hand, trumpSuit, cardMeldClassUsage),

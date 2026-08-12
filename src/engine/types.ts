@@ -72,8 +72,14 @@ export interface GameState {
   stage: GameStage;
   currentTrick: CurrentTrick;
   tricksWon: Record<PlayerId, Card[]>;
-  /** cardId -> meld classes that card has scored a NEW declaration in (replacement re-declarations don't add here). */
-  cardMeldClassUsage: Record<string, MeldClass[]>;
+  /**
+   * cardId -> for each meld class, the highest classRank that card has scored
+   * a NEW (non-replacement) declaration at. Reuse within a class is blocked
+   * only downward (rules spec §3, Portland Club Laws 36-38): a card may move
+   * up to a superior combination of the same class, never back down to an
+   * inferior one.
+   */
+  cardMeldClassUsage: Record<string, Partial<Record<MeldClass, number>>>;
   turn: PlayerId;
   dealerId: PlayerId;
   lastTrickWinnerId: PlayerId | null;
@@ -81,13 +87,16 @@ export interface GameState {
   result?: HandResult;
 }
 
-export interface HandResult {
-  winnerId: PlayerId;
-  roundedScores: Record<PlayerId, number>;
-  rubiconed: boolean;
-  bonus: number;
-  winnerFinalScore: number;
-}
+/** `void: true` means the hand was null and void (Law 61) — an exact tie even after brisques. No winner is declared. */
+export type HandResult =
+  | { void: true; winnerId: null; roundedScores: Record<PlayerId, number>; rubiconed: false; winnerFinalScore: null }
+  | {
+      void: false;
+      winnerId: PlayerId;
+      roundedScores: Record<PlayerId, number>;
+      rubiconed: boolean;
+      winnerFinalScore: number;
+    };
 
 export interface SequenceMeldDef {
   class: 'sequence';
@@ -113,6 +122,8 @@ export interface Ruleset {
   suits: readonly Suit[];
   rubiconThreshold: number;
   gameBonus: number;
+  /** Flat bonus added on top of both rounded scores when the loser is rubiconed (Laws 58-59): the 1,000-pt rubicon bonus plus a fixed 300 standing in for the winner's assumed brisques. */
+  rubiconBonus: number;
   lastTrickBonus: number;
   brisqueValue: number;
   roundTo: number;

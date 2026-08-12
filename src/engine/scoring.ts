@@ -10,68 +10,76 @@ function roundDown(score: number, roundTo: number): number {
   return Math.floor(score / roundTo) * roundTo;
 }
 
-function rawTotalsFor(state: GameState, includeBrisques: boolean): Record<PlayerId, number> {
+function meldOnlyRoundedTotals(state: GameState): Record<PlayerId, number> {
   const totals = {} as Record<PlayerId, number>;
   for (const id of [0, 1] as PlayerId[]) {
-    const player = state.players[id];
-    totals[id] = includeBrisques
-      ? player.score + brisqueScore(state.tricksWon[id], state.ruleset.brisqueValue)
-      : player.score;
+    totals[id] = roundDown(state.players[id].score, state.ruleset.roundTo);
   }
   return totals;
 }
 
-function roundAllDown(raw: Record<PlayerId, number>, roundTo: number): Record<PlayerId, number> {
-  return { 0: roundDown(raw[0], roundTo), 1: roundDown(raw[1], roundTo) };
+function withBrisquesRoundedTotals(state: GameState): Record<PlayerId, number> {
+  const totals = {} as Record<PlayerId, number>;
+  for (const id of [0, 1] as PlayerId[]) {
+    const raw = state.players[id].score + brisqueScore(state.tricksWon[id], state.ruleset.brisqueValue);
+    totals[id] = roundDown(raw, state.ruleset.roundTo);
+  }
+  return totals;
 }
 
 /**
- * Rules spec §5: round down to the nearest 100, higher rounded total wins.
- * Brisques (§5.4) are only counted in when the meld-only picture is a tie, or
- * when the trailing player would otherwise be rubiconed — melds dominate
- * normal scoring. Tie-break cascade per whiteknucklecards.com (§7): if
- * rounding down still ties even after brisques, the player with the higher
- * pre-rounding total rounds UP instead of down, guaranteeing a 100-point gap.
+ * Rules spec §5, verified against the 1887 Portland Club code (Laws 56-61):
+ * round meld totals down to the nearest 100; brisques are only counted in to
+ * break a near-tie or to rescue a trailing player from rubicon; a genuine tie
+ * that survives even with brisques counted voids the hand entirely (Law 61)
+ * rather than forcing a winner.
  */
 export function finalizeScoring(state: GameState): GameState {
   if (state.phase !== 'scoring') {
     throw new Error(`finalizeScoring called outside the scoring phase (phase=${state.phase})`);
   }
 
-  const meldOnlyRaw = rawTotalsFor(state, false);
-  const meldOnly = roundAllDown(meldOnlyRaw, state.ruleset.roundTo);
+  const meldOnly = meldOnlyRoundedTotals(state);
   const meldOnlyLeaderId: PlayerId = meldOnly[0] >= meldOnly[1] ? 0 : 1;
   const meldOnlyLoserId = other(meldOnlyLeaderId);
   const meldOnlyTie = meldOnly[0] === meldOnly[1];
   const meldOnlyWouldRubicon = meldOnly[meldOnlyLoserId] < state.ruleset.rubiconThreshold;
 
   const needsBrisques = meldOnlyTie || meldOnlyWouldRubicon;
-  const rawScores = needsBrisques ? rawTotalsFor(state, true) : meldOnlyRaw;
-  let roundedScores = needsBrisques ? roundAllDown(rawScores, state.ruleset.roundTo) : meldOnly;
+  const roundedScores = needsBrisques ? withBrisquesRoundedTotals(state) : meldOnly;
 
   if (roundedScores[0] === roundedScores[1]) {
-    if (rawScores[0] === rawScores[1]) {
-      throw new Error(
-        'Hand ended in an exact tie down to the raw score, even after counting brisques — not addressed by any sourced ruleset',
-      );
-    }
-    const higherId: PlayerId = rawScores[0] > rawScores[1] ? 0 : 1;
-    roundedScores = { ...roundedScores, [higherId]: roundedScores[higherId] + state.ruleset.roundTo };
+    // Law 61: a genuine tie even after brisques makes the hand null and void.
+    const result: HandResult = {
+      void: true,
+      winnerId: null,
+      roundedScores,
+      rubiconed: false,
+      winnerFinalScore: null,
+    };
+    return { ...state, phase: 'complete', result };
   }
 
   const winnerId: PlayerId = roundedScores[0] > roundedScores[1] ? 0 : 1;
   const loserId = other(winnerId);
   const rubiconed = roundedScores[loserId] < state.ruleset.rubiconThreshold;
 
-  const winnerFinalScore = rubiconed
-    ? state.ruleset.rubiconThreshold + roundedScores[winnerId] + roundedScores[loserId]
-    : state.ruleset.gameBonus + (roundedScores[winnerId] - roundedScores[loserId]);
+  let winnerFinalScore: number;
+  if (rubiconed) {
+    // Law 59: a rubiconed loser's own score under 100 counts as 100 for this addition.
+    const loserContribution = Math.max(roundedScores[loserId], 100);
+    winnerFinalScore = roundedScores[winnerId] + loserContribution + state.ruleset.rubiconBonus;
+  } else {
+    // Law 57: minimum recorded difference is 100 (always true once rounded totals differ at all).
+    const diff = Math.max(roundedScores[winnerId] - roundedScores[loserId], 100);
+    winnerFinalScore = state.ruleset.gameBonus + diff;
+  }
 
   const result: HandResult = {
+    void: false,
     winnerId,
     roundedScores,
     rubiconed,
-    bonus: winnerFinalScore,
     winnerFinalScore,
   };
 

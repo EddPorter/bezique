@@ -30,8 +30,8 @@ function playFullGame(seed: number): GameState {
 
 describe('full game playthrough (integration smoke test)', () => {
   it('runs deal -> main -> endgame -> scoring -> complete without throwing, across many seeds', () => {
-    // The tie-break cascade in scoring.ts resolves every tie that can arise from real dealt
-    // hands, so every seed should reach 'complete' with a definite winner.
+    // Per Law 61 an exact tie even after brisques voids the hand (see scoring.ts) rather
+    // than forcing a winner — a real, valid outcome, not something to treat as a failure.
     for (let seed = 1; seed <= 20; seed++) {
       const finalState = playFullGame(seed);
       expect(finalState.phase).toBe('complete');
@@ -40,10 +40,13 @@ describe('full game playthrough (integration smoke test)', () => {
       expect(finalState.deck).toHaveLength(0);
 
       const result = finalState.result!;
+      if (result.void) {
+        expect(result.roundedScores[0]).toBe(result.roundedScores[1]);
+        continue;
+      }
       expect([0, 1]).toContain(result.winnerId);
-      expect(result.roundedScores[result.winnerId]).toBeGreaterThan(
-        result.roundedScores[result.winnerId === 0 ? 1 : 0],
-      );
+      const loserId = result.winnerId === 0 ? 1 : 0;
+      expect(result.roundedScores[result.winnerId]).toBeGreaterThan(result.roundedScores[loserId]);
       expect(result.winnerFinalScore).toBeGreaterThan(0);
     }
   });

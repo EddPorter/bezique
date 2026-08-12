@@ -184,7 +184,11 @@ function applyDeclareMeld(state: GameState, playerId: PlayerId, move: Extract<Mo
   if (!chosen.isReplacement) {
     const cardMeldClassUsage = { ...next.cardMeldClassUsage };
     for (const cardId of chosen.cardIds) {
-      cardMeldClassUsage[cardId] = [...(cardMeldClassUsage[cardId] ?? []), chosen.class];
+      const perCard = { ...(cardMeldClassUsage[cardId] ?? {}) };
+      const existingRank = perCard[chosen.class];
+      // Reuse within a class is only blocked downward — record the highest rank reached.
+      perCard[chosen.class] = existingRank === undefined ? def.classRank : Math.max(existingRank, def.classRank);
+      cardMeldClassUsage[cardId] = perCard;
     }
     next = { ...next, cardMeldClassUsage };
   }

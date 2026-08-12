@@ -26,9 +26,10 @@ A single-player Rubicon Bezique card game, playable entirely in the browser with
 | Decision | Choice | Why |
 |---|---|---|
 | Variant | Rubicon Bezique (128 cards, 4×32) | See rules spec §0 for sourcing |
-| Rubicon threshold | 1,000 points | Double-sourced (Pagat + whiteknucklecards) |
-| Brisques scoring | Count only for tie-breaking / rubicon-avoidance | Triple-sourced (Pagat + whiteknucklecards + h2g2/Portland Club) |
-| Exact-tie resolution | Round down → tie → count brisques, round down → still tied → higher raw score rounds up (100-pt gap guaranteed) | whiteknucklecards.com; see rules spec §5/§7 |
+| Rubicon threshold | 1,000 points | Quadruple-sourced incl. the 1887 Portland Club primary source |
+| Brisques scoring | Count only for tie-breaking / rubicon-avoidance | Confirmed by primary source (Laws 56, 60, 61); rubiconed loser's own score under 100 rounds up to 100 before adding (Law 59) |
+| Exact-tie resolution | Round down → tie → count brisques, round down → still tied → **hand is null and void**, no winner | Corrected from an earlier secondary-source-based draft; primary source (Law 61) is explicit: a genuine tie voids the hand, no forced tiebreak — see rules spec §5/§7 |
+| Same-class meld reuse | **Upward-safe, downward-blocked**: a card scored in an inferior combo (e.g. Marriage) can later score a superior one (Sequence) in the same class; the reverse is blocked | Reversed from an earlier draft based on ambiguous secondary-source prose; primary source (Laws 36–38) is unambiguous — see rules spec §3/§7 |
 | Stack | React + TypeScript + Vite + Framer Motion | Engine stays framework-free and portable; UI benefits from React's state→render model matching our layering; Framer Motion for card/meld animation |
 | Engine design | Single plain serialisable state object, pure `applyMove(state, move) → newState`, engine always has full information | Makes cheat mode, tutor, and future multiplayer additive rather than special-cased (architecture plan §1–4) |
 | AI design | One weighted evaluation function per move, tiers = different weights, not different algorithms (revisit if needed) | Keeps tutor and AI sharing logic so they can't drift apart |

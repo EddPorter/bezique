@@ -82,18 +82,27 @@ describe('findFreshDeclarableMelds', () => {
     expect(trump.find((o) => o.kind === 'sequence')!.points).toBe(250);
   });
 
-  it('respects the same-class reuse rule: a card already scored in a class cannot fill another kind in that class', () => {
-    // A single KS/QS pair; the King has already scored in the 'sequence' class (e.g. via a prior sequence meld).
+  it('same-class reuse is blocked downward: a card scored in Sequence cannot later fill a Marriage', () => {
+    // Portland Club Law 37: a card declared in a superior combination (Sequence, rank 1)
+    // cannot be reused in an inferior one of the same class (Marriage, rank 0).
     const hand = [c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q')];
-    const usage: Record<string, MeldClass[]> = { 'SK-0': ['sequence'] };
+    const usage: Record<string, Partial<Record<MeldClass, number>>> = { 'SK-0': { sequence: 1 } };
     const options = findFreshDeclarableMelds(rubiconBezique, hand, null, usage);
     expect(options.find((o) => o.kind === 'marriage' && o.suit === 'S')).toBeUndefined();
+  });
+
+  it('same-class reuse is allowed upward: a card scored in Marriage can later fill a Sequence', () => {
+    // Law 36: a declared Marriage's King/Queen can go on to score a Sequence too.
+    const hand = [c('SA-0', 'S', 'A'), c('S10-0', 'S', '10'), c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q'), c('SJ-0', 'S', 'J')];
+    const usage: Record<string, Partial<Record<MeldClass, number>>> = { 'SK-0': { sequence: 0 }, 'SQ-0': { sequence: 0 } };
+    const options = findFreshDeclarableMelds(rubiconBezique, hand, null, usage);
+    expect(options.find((o) => o.kind === 'sequence' && o.suit === 'S')).toBeDefined();
   });
 
   it('does not block reuse across different classes', () => {
     // The King has scored in 'sequence' already, but that should not block it from a 'quartet' meld.
     const hand = [c('SK-0', 'S', 'K'), c('HK-0', 'H', 'K'), c('DK-0', 'D', 'K'), c('CK-0', 'C', 'K')];
-    const usage: Record<string, MeldClass[]> = { 'SK-0': ['sequence'] };
+    const usage: Record<string, Partial<Record<MeldClass, number>>> = { 'SK-0': { sequence: 1 } };
     const options = findFreshDeclarableMelds(rubiconBezique, hand, null, usage);
     expect(options.find((o) => o.kind === 'fourKings')).toBeDefined();
   });
