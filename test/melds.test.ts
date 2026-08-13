@@ -176,6 +176,22 @@ describe('replacement re-declaration (rules spec §3 worked examples)', () => {
     expect(options).toHaveLength(0);
   });
 
+  it('does not offer a reconstruction that would duplicate an already-standing sibling meld (found by simulation)', () => {
+    // marriageA (SK-1, SQ-3) had SQ-3 played away and was already reconstructed once,
+    // as marriageB (SK-1, SQ-2) — a separate meld record, currently fully standing. At
+    // this point nothing further has been played away since marriageB was declared, so
+    // there is no new card to justify re-pairing: the only "spare" the search could find
+    // for marriageA (SQ-2) is already spoken for by marriageB. The Law 35 reshuffle
+    // exception (see the worked example above) only frees up a card once it's actually
+    // been played away — it never lets an untouched, still-standing combination be
+    // re-offered as if newly available.
+    const marriageA = meld({ kind: 'marriage', class: 'sequence', suit: 'S', cardIds: ['SK-1', 'SQ-3'] });
+    const marriageB = meld({ kind: 'marriage', class: 'sequence', suit: 'S', cardIds: ['SK-1', 'SQ-2'] });
+    const hand = [c('SK-1', 'S', 'K'), c('SQ-2', 'S', 'Q')]; // SQ-3 played away; nothing else changed
+    const options = findReplacementRedeclarations(rubiconBezique, hand, [marriageA, marriageB], 'S');
+    expect(options.find((o) => o.replacesMeldId === marriageA.id)).toBeUndefined();
+  });
+
   it('accepts a genuinely fresh, never-melded duplicate as the spare (reported by a user)', () => {
     // Rules spec §3: "substituting a card — either a fresh one from hand, or one borrowed
     // from another standing meld". A player declared K♥+Q♥, played the King away, and holds

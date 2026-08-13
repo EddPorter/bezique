@@ -181,6 +181,23 @@ export function findReplacementRedeclarations(
 
     if (!ok) continue;
 
+    // Reject a reconstruction that would exactly duplicate another meld the player
+    // ALREADY has fully standing (all its cards still in hand, nothing played away
+    // since it was declared). The rules spec's Law 35 "reshuffle" exception (borrowing
+    // a card from another standing meld) only kicks in once a card has actually been
+    // played away to free it up — it never permits re-offering an untouched, still-
+    // standing combination as if it were newly available again. Without this check, a
+    // broken meld's spare search could "borrow" a card that's currently completing a
+    // sibling standing meld and simply re-propose that exact same sibling combination.
+    const duplicatesAStandingMeld = existingMelds.some(
+      (other) =>
+        other.id !== meld.id &&
+        other.cardIds.length === reconstructed.length &&
+        other.cardIds.every((id) => reconstructed.includes(id)) &&
+        other.cardIds.every((id) => isInHand(hand, id)),
+    );
+    if (duplicatesAStandingMeld) continue;
+
     const def = ruleset.meldTable[meld.kind];
     results.push({
       kind: meld.kind,
