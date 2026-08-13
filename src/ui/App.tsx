@@ -28,7 +28,6 @@ export function App() {
     tutorEnabled,
     setTutorEnabled,
     tutorAdvice,
-    applyTrainingModePreset,
     carteBlancheAnnouncement,
   } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
@@ -125,14 +124,6 @@ export function App() {
               <input type="checkbox" checked={tutorEnabled} onChange={(e) => setTutorEnabled(e.target.checked)} />
               Tutor
             </label>
-            <button
-              type="button"
-              className="training-mode-button"
-              title="Turns the tutor on and sets the opponent to Novice — a one-off shortcut, not a linked toggle. Change Tutor or Difficulty independently afterward any time."
-              onClick={applyTrainingModePreset}
-            >
-              Set up training mode
-            </button>
           </div>
 
           <label className="tier-select">

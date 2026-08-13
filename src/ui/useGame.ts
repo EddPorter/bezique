@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HumanAgent } from '../agents/humanAgent.js';
 import { getTutorAdvice, type TutorAdvice } from '../agents/tutor.js';
 import type { Agent } from '../agents/types.js';
-import { CLUB_PLAYER_TIER, NOVICE_TIER, WeightedAgent, type TierConfig } from '../agents/weightedAgent.js';
+import { CLUB_PLAYER_TIER, WeightedAgent, type TierConfig } from '../agents/weightedAgent.js';
 import {
   applyMove,
   dealNewHand,
@@ -157,17 +157,6 @@ export function useGame() {
     [tutorEnabled, isHumanTurn, legalMoves, state],
   );
 
-  // "A low/mid-tier AI opponent paired with the tutor turned on" (architecture plan §5) —
-  // training mode is a one-click PRESET for that combination, not a mode with its own
-  // ongoing state. It used to be a checkbox whose checked-state was derived from
-  // tutorEnabled/aiTier, which made it look like an independent toggle welded to Tutor —
-  // it isn't one; it's an action. Tutor and Difficulty stay the two real, independent
-  // controls; this just sets both of them at once.
-  const applyTrainingModePreset = useCallback(() => {
-    setTutorEnabled(true);
-    setAiTier(NOVICE_TIER);
-  }, []);
-
   return {
     state,
     legalMoves,
@@ -180,7 +169,6 @@ export function useGame() {
     tutorEnabled,
     setTutorEnabled,
     tutorAdvice,
-    applyTrainingModePreset,
     carteBlancheAnnouncement,
   };
 }
