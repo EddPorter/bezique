@@ -10,6 +10,7 @@ import {
   findCard,
   finalizeScoring,
   getLegalMoves,
+  makeDebugState,
   makeRng,
   resolveTrick,
   rubiconBezique,
@@ -97,6 +98,34 @@ export function useGame() {
       }
     }
     return undefined;
+  }, [state]);
+
+  // Dev-only debug bridge (docs/ideas-backlog.md #2/#3): exposes the live GameState on
+  // window.__bezique so it can be dumped or overwritten directly from the browser console
+  // or an automated script, instead of clicking/playing up to a specific scenario. GameState
+  // is plain, serializable data (no class instances, no functions), so getState()'s result
+  // round-trips through JSON.stringify/parse cleanly, and setState() jumps the running game
+  // straight to whatever was passed in — the game loop effect below picks it up on the next
+  // render exactly as if it had been reached by play. Stripped from production builds since
+  // `import.meta.env.DEV` is statically false there.
+  //
+  // Example (browser console): window.__bezique.setState(window.__bezique.makeDebugState({
+  //   turn: window.__bezique.HUMAN_ID,
+  //   trumpSuit: 'H',
+  //   players: [
+  //     { id: 0, hand: [{ id: 'HK-0', suit: 'H', rank: 'K' }, { id: 'HQ-0', suit: 'H', rank: 'Q' }], melds: [], score: 0, carteBlanchePoints: 0 },
+  //     { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+  //   ],
+  // }))
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as { __bezique: unknown }).__bezique = {
+      getState: () => state,
+      setState,
+      makeDebugState,
+      HUMAN_ID,
+      AI_ID,
+    };
   }, [state]);
 
   useEffect(() => {

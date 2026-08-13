@@ -23,6 +23,7 @@ export {
 export { MELD_KIND_LABELS } from './meldLabels.js';
 export { endgameLegalFollowCards, resolveTrick } from './trick.js';
 export { dealNewHand } from './state.js';
+export { makeDebugState } from './debugState.js';
 export { applyMove, getLegalMoves } from './moves.js';
 export { finalizeScoring } from './scoring.js';
 export { buildHelpSheetContent, type HelpSheetContent, type MeldTableRow } from './helpSheet.js';
