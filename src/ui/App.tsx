@@ -124,25 +124,25 @@ export function App() {
               <input type="checkbox" checked={tutorEnabled} onChange={(e) => setTutorEnabled(e.target.checked)} />
               Tutor
             </label>
-          </div>
 
-          <label className="tier-select">
-            <span>Difficulty</span>
-            <select
-              name="opponent-difficulty"
-              value={aiTier.name}
-              onChange={(e) => {
-                const next = AI_TIERS.find((t) => t.name === e.target.value);
-                if (next) setAiTier(next);
-              }}
-            >
-              {AI_TIERS.map((tier) => (
-                <option key={tier.name} value={tier.name}>
-                  {tier.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="tier-select">
+              <span>Difficulty</span>
+              <select
+                name="opponent-difficulty"
+                value={aiTier.name}
+                onChange={(e) => {
+                  const next = AI_TIERS.find((t) => t.name === e.target.value);
+                  if (next) setAiTier(next);
+                }}
+              >
+                {AI_TIERS.map((tier) => (
+                  <option key={tier.name} value={tier.name}>
+                    {tier.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           {state.phase === 'complete' && state.result && (
             <ResultBanner result={state.result} onPlayAgain={startNewHand} />
