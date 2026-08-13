@@ -35,6 +35,17 @@ export function isBrisqueCard(card: Card): boolean {
  * of whether it's also a brisque — scaled to be comparable to a typical brisque risk penalty. */
 const TRUMP_CONSERVATION_VALUE = 3;
 
+/** The certain (not probabilistic) cost of a card leaving your hand for good: full brisque
+ * value if it's a brisque, plus the flat trump-conservation cost if it's a trump. Used when
+ * the outcome is already known (losing a follow), as opposed to `riskEstimator`, which is
+ * for leads/discards where whether the card gets captured is still uncertain. */
+function certainSurrenderCost(state: GameState, card: Card): number {
+  let cost = 0;
+  if (isBrisqueCard(card)) cost += state.ruleset.brisqueValue;
+  if (state.trumpSuit !== null && card.suit === state.trumpSuit) cost += TRUMP_CONSERVATION_VALUE;
+  return cost;
+}
+
 function findCardById(hand: Card[], id: string): Card {
   const card = hand.find((c) => c.id === id);
   if (!card) throw new Error(`Card ${id} not in hand`);
@@ -138,7 +149,10 @@ export function evaluateMove(
         // preference for the cheapest winning card when several would all win.
         trickValue = captured + 5 - rankValue(card.rank) * 0.01;
       } else {
-        trickValue = -(isBrisqueCard(card) ? state.ruleset.brisqueValue : 0);
+        // A definite loss: give up the least by discarding the card with the smallest
+        // surrender cost, and among equal-cost options (typically several low, non-trump,
+        // non-brisque cards worth nothing at all), prefer shedding the lowest rank first.
+        trickValue = -certainSurrenderCost(state, card) - rankValue(card.rank) * 0.01;
       }
     } else {
       // Leading, or an unconstrained main-phase discard: no trick to resolve yet,

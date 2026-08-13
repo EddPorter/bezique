@@ -142,6 +142,55 @@ describe('getTutorAdvice', () => {
     expect(advice.explanation).toMatch(/costs you no trump/);
   });
 
+  it('recommends discarding the worst card when a trick is unwinnable, not just any losing card', () => {
+    // Lead is the trump Ace itself, so even a low trump genuinely loses here (a lower trump
+    // can't beat it) rather than winning by trumping a non-trump lead. Between a trump 9 and
+    // a plain 7, both lose, but surrendering the trump costs strictly more.
+    const state = makeState({
+      trumpSuit: 'H',
+      stage: 'awaitingFollow',
+      turn: 0,
+      currentTrick: { leaderId: 1, leadCard: c('HA-0', 'H', 'A') },
+      players: [
+        {
+          id: 0,
+          hand: [c('H9-0', 'H', '9'), c('C7-0', 'C', '7')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'C7-0' });
+    expect(advice.explanation).toMatch(/gives up the least/);
+  });
+
+  it('among several equally worthless losing cards, still calls it a close call rather than overclaiming a reason', () => {
+    // C7 and C9 are both cheap, non-trump, non-brisque discards — the gap between them is
+    // negligible, so the tutor should say so rather than fabricate a decisive-sounding reason.
+    const state = makeState({
+      trumpSuit: 'H',
+      stage: 'awaitingFollow',
+      turn: 0,
+      currentTrick: { leaderId: 1, leadCard: c('HA-0', 'H', 'A') },
+      players: [
+        {
+          id: 0,
+          hand: [c('C7-0', 'C', '7'), c('C9-0', 'C', '9')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'C7-0' });
+    expect(advice.explanation).toMatch(/about as good as your other options/);
+  });
+
   it('ranks every legal move in descending total order', () => {
     const state = makeState({
       players: [

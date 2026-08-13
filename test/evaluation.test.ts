@@ -110,7 +110,7 @@ describe('evaluateMove: playCard resolving a trick', () => {
     });
     const losingMove = { type: 'playCard' as const, playerId: 1 as const, cardId: 'S10-1' };
     const result = evaluateMove(state, 1, losingMove, UNIT_WEIGHTS);
-    expect(result.trickValue).toBe(-10);
+    expect(result.trickValue).toBeCloseTo(-10.07, 2); // -10 plus a tiny rank tiebreak
   });
 
   it('losing a non-brisque card costs nothing', () => {
@@ -125,7 +125,7 @@ describe('evaluateMove: playCard resolving a trick', () => {
     });
     const losingMove = { type: 'playCard' as const, playerId: 1 as const, cardId: 'S7-0' };
     const result = evaluateMove(state, 1, losingMove, UNIT_WEIGHTS);
-    expect(result.trickValue).toBeCloseTo(0);
+    expect(result.trickValue).toBeCloseTo(0, 1); // a tiny rank tiebreak, not a real cost
   });
 
   it('prefers the cheapest of several winning cards via a small rank tiebreak', () => {
@@ -143,6 +143,50 @@ describe('evaluateMove: playCard resolving a trick', () => {
     const cheaper = evaluateMove(state, 1, { type: 'playCard', playerId: 1, cardId: 'S8-0' }, UNIT_WEIGHTS);
     const pricier = evaluateMove(state, 1, { type: 'playCard', playerId: 1, cardId: 'S9-0' }, UNIT_WEIGHTS);
     expect(cheaper.trickValue).toBeGreaterThan(pricier.trickValue);
+  });
+
+  it('when the trick is unwinnable, prefers discarding the lowest of several equally worthless cards', () => {
+    // Lead is an unbeatable Ace; every card in hand loses regardless of what's played.
+    // Among these non-brisque, non-trump losers, the lowest rank should be shed first.
+    const state = makeState({
+      stage: 'awaitingFollow',
+      turn: 1,
+      currentTrick: { leaderId: 0, leadCard: c('SA-0', 'S', 'A') },
+      players: [
+        { id: 0, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        {
+          id: 1,
+          hand: [c('H9-0', 'H', '9'), c('H7-0', 'H', '7'), c('H8-0', 'H', '8')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+      ],
+    });
+    const scored = ['H9-0', 'H7-0', 'H8-0'].map((cardId) => ({
+      cardId,
+      result: evaluateMove(state, 1, { type: 'playCard', playerId: 1, cardId }, UNIT_WEIGHTS),
+    }));
+    const best = scored.sort((a, b) => b.result.total - a.result.total)[0]!;
+    expect(best.cardId).toBe('H7-0'); // the lowest rank of the three
+  });
+
+  it('when the trick is unwinnable, still prefers surrendering a non-trump over a trump', () => {
+    // Lead is the trump Ace itself, so a low trump genuinely loses here too (not trumps the
+    // lead) — a lower trump can never beat it, and an off-suit non-trump never beats a trump lead.
+    const state = makeState({
+      trumpSuit: 'H',
+      stage: 'awaitingFollow',
+      turn: 1,
+      currentTrick: { leaderId: 0, leadCard: c('HA-0', 'H', 'A') },
+      players: [
+        { id: 0, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [c('H9-0', 'H', '9'), c('C9-0', 'C', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const trumpDiscard = evaluateMove(state, 1, { type: 'playCard', playerId: 1, cardId: 'H9-0' }, UNIT_WEIGHTS);
+    const plainDiscard = evaluateMove(state, 1, { type: 'playCard', playerId: 1, cardId: 'C9-0' }, UNIT_WEIGHTS);
+    expect(plainDiscard.trickValue).toBeGreaterThan(trumpDiscard.trickValue);
   });
 });
 
