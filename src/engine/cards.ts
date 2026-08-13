@@ -14,6 +14,11 @@ export function isCourtCard(rank: Rank): boolean {
   return rank === 'J' || rank === 'Q' || rank === 'K' || rank === 'A';
 }
 
+/** Rules spec §4: every Ace or 10 captured in tricks scores 10 points each as a brisque. */
+export function isBrisqueCard(card: Card): boolean {
+  return card.rank === 'A' || card.rank === '10';
+}
+
 export function cardKey(suit: Card['suit'], rank: Rank): string {
   return `${suit}${rank}`;
 }

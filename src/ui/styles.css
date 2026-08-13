@@ -101,6 +101,12 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.scoreboard-sub {
+  font-size: 0.68rem;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Player areas */
 
 .opponent-area,

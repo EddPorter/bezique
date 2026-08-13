@@ -1,7 +1,9 @@
-import { rankValue } from '../engine/cards.js';
+import { isBrisqueCard, rankValue } from '../engine/cards.js';
 import { buildDeck } from '../engine/deck.js';
 import { findAllDeclarableMelds, findFreshDeclarableMelds } from '../engine/melds.js';
 import type { Card, GameState, Move, PlayerId, Suit } from '../engine/types.js';
+
+export { isBrisqueCard } from '../engine/cards.js';
 
 /**
  * The shared weighted evaluation function (architecture plan §5): every AI
@@ -25,10 +27,6 @@ export interface EvaluationBreakdown {
   brisqueRisk: number;
   informationGivenAway: number;
   total: number;
-}
-
-export function isBrisqueCard(card: Card): boolean {
-  return card.rank === 'A' || card.rank === '10';
 }
 
 /** Flat value of holding onto a trump card rather than leading/discarding it, independent
