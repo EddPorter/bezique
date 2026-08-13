@@ -7,9 +7,10 @@ interface HandProps {
   legalMoves: Move[];
   onPlay: (cardId: string) => void;
   recommendedCardId?: string | null;
+  meldCardIds?: ReadonlySet<string>;
 }
 
-export function Hand({ hand, legalMoves, onPlay, recommendedCardId = null }: HandProps) {
+export function Hand({ hand, legalMoves, onPlay, recommendedCardId = null, meldCardIds }: HandProps) {
   const playableIds = new Set(
     legalMoves
       .filter((m): m is Extract<Move, { type: 'playCard' }> => m.type === 'playCard')
@@ -26,6 +27,7 @@ export function Hand({ hand, legalMoves, onPlay, recommendedCardId = null }: Han
             onClick={() => onPlay(card.id)}
             enterDelay={i * 0.035}
             recommended={card.id === recommendedCardId}
+            partOfMeld={meldCardIds?.has(card.id) ?? false}
           />
         ))}
       </AnimatePresence>

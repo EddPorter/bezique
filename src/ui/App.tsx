@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
+import { CarteBlancheBanner } from './components/CarteBlancheBanner.js';
 import { CardBack } from './components/Card.js';
 import { Hand } from './components/Hand.js';
 import { HelpSheet } from './components/HelpSheet.js';
@@ -27,8 +28,8 @@ export function App() {
     tutorEnabled,
     setTutorEnabled,
     tutorAdvice,
-    trainingModeOn,
-    setTrainingMode,
+    applyTrainingModePreset,
+    carteBlancheAnnouncement,
   } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
   const human = state.players[HUMAN_ID];
@@ -36,6 +37,11 @@ export function App() {
   const opponentThinking = state.turn === AI_ID && state.phase !== 'complete' && completedTrick === null;
   const recommendedCardId =
     tutorAdvice && tutorAdvice.move.type === 'playCard' ? tutorAdvice.move.cardId : null;
+  // Public info either way — which specific cards have been captured in tricks doesn't
+  // require seeing anyone's hand, so this drives the depleted/standing meld display for
+  // both players identically.
+  const playedCardIds = new Set([...state.tricksWon[0], ...state.tricksWon[1]].map((c) => c.id));
+  const humanMeldCardIds = new Set(human.melds.flatMap((m) => m.cardIds));
 
   const handlePlay = (cardId: string) => {
     submitMove({ type: 'playCard', playerId: HUMAN_ID, cardId });
@@ -54,33 +60,81 @@ export function App() {
         </button>
       </div>
       <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
-      <ScoreBoard state={state} />
 
-      <div className="assist-toggles">
-        <label className="toggle" title="Shows move advice from the tutor.">
-          <input
-            type="checkbox"
-            checked={tutorEnabled}
-            onChange={(e) => setTutorEnabled(e.target.checked)}
-          />
-          Tutor
-        </label>
-        <label
-          className="toggle"
-          title="Shortcut: turns the tutor on and sets the opponent to Novice. Turning it off only resets the difficulty — the tutor stays as you left it."
-        >
-          <input
-            type="checkbox"
-            checked={trainingModeOn}
-            onChange={(e) => setTrainingMode(e.target.checked)}
-          />
-          Training mode
-        </label>
-      </div>
+      <div className="game-layout">
+        <div className="main-column">
+          <section className="opponent-area">
+            <h2>Opponent</h2>
+            <div className="hand">
+              <AnimatePresence>
+                {opponent.hand.map((card) => (
+                  <CardBack key={card.id} card={card} />
+                ))}
+              </AnimatePresence>
+            </div>
+            <MeldDisplay melds={opponent.melds} label="Opponent's melds" playedCardIds={playedCardIds} />
+          </section>
 
-      <section className="opponent-area">
-        <div className="opponent-header">
-          <h2>Opponent</h2>
+          <section className="middle-area">
+            <Trick trick={state.currentTrick} completedTrick={completedTrick} humanId={HUMAN_ID} />
+            <AnimatePresence>
+              {opponentThinking && (
+                <motion.p
+                  className="thinking"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  Opponent is thinking
+                  <span className="thinking-dots">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                  </span>
+                </motion.p>
+              )}
+            </AnimatePresence>
+            {isHumanTurn && state.stage === 'awaitingMeldDecision' && (
+              <MeldChoices legalMoves={legalMoves} onChoose={handleMeldChoice} recommendedMove={tutorAdvice?.move} />
+            )}
+            <AnimatePresence>{tutorAdvice && <TutorPanel advice={tutorAdvice} />}</AnimatePresence>
+          </section>
+
+          <section className="human-area">
+            <h2>You</h2>
+            <Hand
+              hand={human.hand}
+              legalMoves={isHumanTurn && state.stage !== 'awaitingMeldDecision' ? legalMoves : []}
+              onPlay={handlePlay}
+              recommendedCardId={recommendedCardId}
+              meldCardIds={humanMeldCardIds}
+            />
+            <MeldDisplay melds={human.melds} label="Your melds" playedCardIds={playedCardIds} />
+          </section>
+        </div>
+
+        <aside className="side-panel">
+          <ScoreBoard state={state} />
+
+          <AnimatePresence>
+            {carteBlancheAnnouncement && <CarteBlancheBanner announcement={carteBlancheAnnouncement} />}
+          </AnimatePresence>
+
+          <div className="assist-toggles">
+            <label className="toggle" title="Shows move advice from the tutor.">
+              <input type="checkbox" checked={tutorEnabled} onChange={(e) => setTutorEnabled(e.target.checked)} />
+              Tutor
+            </label>
+            <button
+              type="button"
+              className="training-mode-button"
+              title="Turns the tutor on and sets the opponent to Novice — a one-off shortcut, not a linked toggle. Change Tutor or Difficulty independently afterward any time."
+              onClick={applyTrainingModePreset}
+            >
+              Set up training mode
+            </button>
+          </div>
+
           <label className="tier-select">
             <span>Difficulty</span>
             <select
@@ -98,56 +152,12 @@ export function App() {
               ))}
             </select>
           </label>
-        </div>
-        <div className="hand">
-          <AnimatePresence>
-            {opponent.hand.map((card) => (
-              <CardBack key={card.id} card={card} />
-            ))}
-          </AnimatePresence>
-        </div>
-        <MeldDisplay melds={opponent.melds} label="Opponent's melds" />
-      </section>
 
-      <section className="middle-area">
-        <Trick trick={state.currentTrick} completedTrick={completedTrick} humanId={HUMAN_ID} />
-        <AnimatePresence>
-          {opponentThinking && (
-            <motion.p
-              className="thinking"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              Opponent is thinking
-              <span className="thinking-dots">
-                <span>.</span>
-                <span>.</span>
-                <span>.</span>
-              </span>
-            </motion.p>
+          {state.phase === 'complete' && state.result && (
+            <ResultBanner result={state.result} onPlayAgain={startNewHand} />
           )}
-        </AnimatePresence>
-        {isHumanTurn && state.stage === 'awaitingMeldDecision' && (
-          <MeldChoices legalMoves={legalMoves} onChoose={handleMeldChoice} recommendedMove={tutorAdvice?.move} />
-        )}
-        <AnimatePresence>{tutorAdvice && <TutorPanel advice={tutorAdvice} />}</AnimatePresence>
-      </section>
-
-      {state.phase === 'complete' && state.result && (
-        <ResultBanner result={state.result} onPlayAgain={startNewHand} />
-      )}
-
-      <section className="human-area">
-        <h2>You</h2>
-        <Hand
-          hand={human.hand}
-          legalMoves={isHumanTurn && state.stage !== 'awaitingMeldDecision' ? legalMoves : []}
-          onPlay={handlePlay}
-          recommendedCardId={recommendedCardId}
-        />
-        <MeldDisplay melds={human.melds} label="Your melds" />
-      </section>
+        </aside>
+      </div>
     </div>
   );
 }

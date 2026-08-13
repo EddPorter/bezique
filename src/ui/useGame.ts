@@ -27,6 +27,14 @@ export interface CompletedTrick {
   winnerId: PlayerId;
 }
 
+export interface CarteBlancheAnnouncement {
+  playerId: PlayerId;
+  amount: number;
+}
+
+/** How long a carte blanche announcement stays visible before clearing. */
+const CARTE_BLANCHE_ANNOUNCEMENT_MS = 3500;
+
 /**
  * Drives the game loop through the same Agent interface for both players
  * (architecture plan §5): whichever player owns the current turn gets asked
@@ -53,13 +61,41 @@ export function useGame() {
   const [state, setState] = useState<GameState>(() => dealNewHand(rubiconBezique, AI_ID, makeRng(Date.now())));
   const [completedTrick, setCompletedTrick] = useState<CompletedTrick | null>(null);
 
+  // Carte blanche (rules spec §3) is auto-detected and scored directly rather than modeled
+  // as a persistent meld (see docs/PROJECT-BRIEF.md) — which means, without this, it was
+  // completely silent: a real 50-point jump with no meld record and no announcement to
+  // explain it. Tracks the last-seen total per player so a genuine increase (initial deal,
+  // or any later draw that still has zero court cards) can be announced.
+  const prevCarteBlancheRef = useRef<Record<PlayerId, number>>({ 0: 0, 1: 0 });
+  const [carteBlancheAnnouncement, setCarteBlancheAnnouncement] = useState<CarteBlancheAnnouncement | null>(null);
+
   const startNewHand = useCallback(() => {
     setCompletedTrick(null);
+    setCarteBlancheAnnouncement(null);
+    prevCarteBlancheRef.current = { 0: 0, 1: 0 };
     setState((prev) => {
       const nextDealer: PlayerId = prev.dealerId === 0 ? 1 : 0;
       return dealNewHand(rubiconBezique, nextDealer, makeRng(Date.now()));
     });
   }, []);
+
+  useEffect(() => {
+    const prev = prevCarteBlancheRef.current;
+    const next: Record<PlayerId, number> = {
+      0: state.players[0].carteBlanchePoints,
+      1: state.players[1].carteBlanchePoints,
+    };
+    prevCarteBlancheRef.current = next;
+
+    for (const pid of [0, 1] as PlayerId[]) {
+      if (next[pid] > prev[pid]) {
+        setCarteBlancheAnnouncement({ playerId: pid, amount: next[pid] - prev[pid] });
+        const timer = setTimeout(() => setCarteBlancheAnnouncement(null), CARTE_BLANCHE_ANNOUNCEMENT_MS);
+        return () => clearTimeout(timer);
+      }
+    }
+    return undefined;
+  }, [state]);
 
   useEffect(() => {
     if (state.phase === 'scoring') {
@@ -122,18 +158,14 @@ export function useGame() {
   );
 
   // "A low/mid-tier AI opponent paired with the tutor turned on" (architecture plan §5) —
-  // training mode is just a one-click preset for that combination, not a separate mode
-  // to maintain. Turning it ON sets both; turning it OFF only relaxes the difficulty back
-  // to normal — it deliberately leaves the Tutor toggle alone, since wanting to stop
-  // practicing against an easy opponent isn't the same as wanting the advice to disappear.
-  const trainingModeOn = tutorEnabled && aiTier.name === NOVICE_TIER.name;
-  const setTrainingMode = useCallback((on: boolean) => {
-    if (on) {
-      setTutorEnabled(true);
-      setAiTier(NOVICE_TIER);
-    } else {
-      setAiTier(CLUB_PLAYER_TIER);
-    }
+  // training mode is a one-click PRESET for that combination, not a mode with its own
+  // ongoing state. It used to be a checkbox whose checked-state was derived from
+  // tutorEnabled/aiTier, which made it look like an independent toggle welded to Tutor —
+  // it isn't one; it's an action. Tutor and Difficulty stay the two real, independent
+  // controls; this just sets both of them at once.
+  const applyTrainingModePreset = useCallback(() => {
+    setTutorEnabled(true);
+    setAiTier(NOVICE_TIER);
   }, []);
 
   return {
@@ -148,7 +180,7 @@ export function useGame() {
     tutorEnabled,
     setTutorEnabled,
     tutorAdvice,
-    trainingModeOn,
-    setTrainingMode,
+    applyTrainingModePreset,
+    carteBlancheAnnouncement,
   };
 }

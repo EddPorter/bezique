@@ -5,11 +5,16 @@ import { MELD_KIND_LABELS } from '../../engine/meldLabels.js';
 import type { MeldDeclaration } from '../../engine/types.js';
 
 /** Small, non-interactive stand-in for a card — melded cards stay playable from the
- * hand itself, so this is a summary view, not the same shared-animation element. */
-function MiniCard({ cardId }: { cardId: string }) {
+ * hand itself, so this is a summary view, not the same shared-animation element.
+ * `depleted` cards have already been played to a trick (public info — a card's
+ * captured/not-captured status doesn't require seeing anyone's actual hand) and are
+ * shown hollow rather than filled, since a spare could refresh them via replacement
+ * re-declaration (rules spec §3). Works identically for the opponent's melds: no
+ * cheat-mode concerns, since `tricksWon` is exactly as public as the melds themselves. */
+function MiniCard({ cardId, depleted }: { cardId: string; depleted: boolean }) {
   const { suit, rank } = parseCardId(cardId);
   return (
-    <span className="mini-card" data-red={isRedSuit(suit)}>
+    <span className="mini-card" data-red={isRedSuit(suit)} data-depleted={depleted}>
       {rank}
       {SUIT_SYMBOL[suit]}
     </span>
@@ -19,9 +24,10 @@ function MiniCard({ cardId }: { cardId: string }) {
 interface MeldDisplayProps {
   melds: MeldDeclaration[];
   label: string;
+  playedCardIds: ReadonlySet<string>;
 }
 
-export function MeldDisplay({ melds, label }: MeldDisplayProps) {
+export function MeldDisplay({ melds, label, playedCardIds }: MeldDisplayProps) {
   if (melds.length === 0) return null;
   return (
     <div className="meld-display">
@@ -43,7 +49,7 @@ export function MeldDisplay({ melds, label }: MeldDisplayProps) {
               </span>
               <div className="meld-group-cards">
                 {meld.cardIds.map((cardId, i) => (
-                  <MiniCard key={`${cardId}-${i}`} cardId={cardId} />
+                  <MiniCard key={`${cardId}-${i}`} cardId={cardId} depleted={playedCardIds.has(cardId)} />
                 ))}
               </div>
             </motion.div>
