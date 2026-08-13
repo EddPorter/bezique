@@ -1,0 +1,147 @@
+import { describe, expect, it } from 'vitest';
+import { getTutorAdvice } from '../src/agents/tutor.js';
+import { rubiconBezique } from '../src/engine/ruleset.js';
+import type { Card, GameState } from '../src/engine/types.js';
+import { getLegalMoves } from '../src/engine/moves.js';
+
+const c = (id: string, suit: Card['suit'], rank: Card['rank']): Card => ({ id, suit, rank });
+
+function makeState(overrides: Partial<GameState> = {}): GameState {
+  const base: GameState = {
+    ruleset: rubiconBezique,
+    deck: [],
+    players: [
+      { id: 0, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+    ],
+    trumpSuit: null,
+    phase: 'main',
+    stage: 'awaitingLead',
+    currentTrick: { leaderId: 0, leadCard: null },
+    tricksWon: { 0: [], 1: [] },
+    cardMeldClassUsage: {},
+    turn: 0,
+    dealerId: 1,
+    lastTrickWinnerId: null,
+    history: [],
+  };
+  return { ...base, ...overrides };
+}
+
+describe('getTutorAdvice', () => {
+  it('returns null when there are no legal moves', () => {
+    const state = makeState();
+    expect(getTutorAdvice(state, 0, [])).toBeNull();
+  });
+
+  it('recommends declaring the meld, with points named in the explanation', () => {
+    const state = makeState({
+      stage: 'awaitingMeldDecision',
+      turn: 0,
+      players: [
+        { id: 0, hand: [c('SQ-0', 'S', 'Q'), c('DJ-0', 'D', 'J')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move.type).toBe('declareMeld');
+    expect(advice.explanation).toContain('Bezique');
+    expect(advice.explanation).toContain('40');
+  });
+
+  it('explains a forced single legal card plainly', () => {
+    const state = makeState({
+      players: [
+        { id: 0, hand: [c('S7-0', 'S', '7')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'S7-0' });
+    expect(advice.explanation).toMatch(/only legal card/);
+  });
+
+  it('recommends winning a trick and names the captured brisque', () => {
+    const state = makeState({
+      stage: 'awaitingFollow',
+      turn: 1,
+      currentTrick: { leaderId: 0, leadCard: c('S10-0', 'S', '10') },
+      players: [
+        { id: 0, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [c('SA-0', 'S', 'A'), c('H7-0', 'H', '7')], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 1, getLegalMoves(state, 1))!;
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 1, cardId: 'SA-0' });
+    expect(advice.explanation).toMatch(/wins the trick/);
+    expect(advice.explanation).toMatch(/brisque/);
+  });
+
+  it('recommends the card that keeps meld potential alive over one that would forfeit it', () => {
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q'), c('H7-0', 'H', '7')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    // SK/SQ would forfeit the marriage if led away; H7 is unrelated and safe.
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'H7-0' });
+    expect(advice.explanation).toMatch(/meld options open/);
+  });
+
+  it('recommends the safe lead over an exposed brisque when there is no meld difference', () => {
+    // Trumps must be in play for an Ace to carry any real risk at all — with no trump
+    // suit set, nothing can beat an Ace of any suit, so a card-memory-aware tutor
+    // correctly sees zero risk in that case (verified separately below).
+    const state = makeState({
+      trumpSuit: 'D',
+      players: [
+        { id: 0, hand: [c('SA-0', 'S', 'A'), c('H9-0', 'H', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'H9-0' });
+    expect(advice.explanation).toMatch(/safe to lead/);
+  });
+
+  it('recognizes a led Ace is unbeatable when no trump suit has been set yet', () => {
+    const state = makeState({
+      players: [
+        { id: 0, hand: [c('SA-0', 'S', 'A'), c('H9-0', 'H', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    for (const { breakdown } of advice.ranked) {
+      expect(breakdown.brisqueRisk).toBeCloseTo(0);
+    }
+  });
+
+  it('ranks every legal move in descending total order', () => {
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('SA-0', 'S', 'A'), c('H9-0', 'H', '9'), c('C8-0', 'C', '8')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.ranked).toHaveLength(3);
+    for (let i = 1; i < advice.ranked.length; i++) {
+      expect(advice.ranked[i - 1]!.breakdown.total).toBeGreaterThanOrEqual(advice.ranked[i]!.breakdown.total);
+    }
+  });
+});

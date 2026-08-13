@@ -46,6 +46,27 @@ h1 {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Assist toggles (tutor, training mode) */
+
+.assist-toggles {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  opacity: 0.9;
+  cursor: pointer;
+}
+
+.toggle input {
+  cursor: pointer;
+}
+
 /* Scoreboard */
 
 .scoreboard {
@@ -166,6 +187,10 @@ h1 {
   cursor: pointer;
   opacity: 1;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+.card[data-recommended='true'] {
+  box-shadow: 0 0 0 3px #5ec8ff, 0 3px 8px rgba(0, 0, 0, 0.45);
 }
 
 .card-corner {
@@ -381,6 +406,34 @@ button:hover {
 
 .pass-button {
   background: linear-gradient(160deg, #e2e2e2, #b9b9b9);
+}
+
+button[data-recommended='true'] {
+  box-shadow: 0 0 0 3px #5ec8ff, 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Tutor panel */
+
+.tutor-panel {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  background: rgba(94, 200, 255, 0.15);
+  border: 1px solid rgba(94, 200, 255, 0.4);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
+  max-width: 30rem;
+  text-align: left;
+}
+
+.tutor-panel-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: #5ec8ff;
+  flex-shrink: 0;
 }
 
 /* Result banner */

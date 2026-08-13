@@ -6,9 +6,10 @@ interface HandProps {
   hand: CardModel[];
   legalMoves: Move[];
   onPlay: (cardId: string) => void;
+  recommendedCardId?: string | null;
 }
 
-export function Hand({ hand, legalMoves, onPlay }: HandProps) {
+export function Hand({ hand, legalMoves, onPlay, recommendedCardId = null }: HandProps) {
   const playableIds = new Set(
     legalMoves
       .filter((m): m is Extract<Move, { type: 'playCard' }> => m.type === 'playCard')
@@ -24,6 +25,7 @@ export function Hand({ hand, legalMoves, onPlay }: HandProps) {
             selectable={playableIds.has(card.id)}
             onClick={() => onPlay(card.id)}
             enterDelay={i * 0.035}
+            recommended={card.id === recommendedCardId}
           />
         ))}
       </AnimatePresence>

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HumanAgent } from '../agents/humanAgent.js';
+import { getTutorAdvice, type TutorAdvice } from '../agents/tutor.js';
 import type { Agent } from '../agents/types.js';
-import { CLUB_PLAYER_TIER, WeightedAgent, type TierConfig } from '../agents/weightedAgent.js';
+import { CLUB_PLAYER_TIER, NOVICE_TIER, WeightedAgent, type TierConfig } from '../agents/weightedAgent.js';
 import {
   applyMove,
   dealNewHand,
@@ -39,6 +40,7 @@ export interface CompletedTrick {
 export function useGame() {
   const humanAgent = useRef(new HumanAgent()).current;
   const [aiTier, setAiTier] = useState<TierConfig>(CLUB_PLAYER_TIER);
+  const [tutorEnabled, setTutorEnabled] = useState(false);
   const agentsRef = useRef<[Agent, Agent]>([humanAgent, new WeightedAgent(AI_ID, aiTier)]);
 
   // The opponent can change tier mid-session (no persistence yet — that's step 8); keep the
@@ -112,5 +114,34 @@ export function useGame() {
     [state, humanAgent],
   );
 
-  return { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick, aiTier, setAiTier };
+  // Read-only advisor (architecture plan §5): never chooses a move itself, just ranks
+  // the human's own legal moves and surfaces the top one with an explanation.
+  const tutorAdvice: TutorAdvice | null = useMemo(
+    () => (tutorEnabled && isHumanTurn && legalMoves.length > 0 ? getTutorAdvice(state, HUMAN_ID, legalMoves) : null),
+    [tutorEnabled, isHumanTurn, legalMoves, state],
+  );
+
+  // "A low/mid-tier AI opponent paired with the tutor turned on" (architecture plan §5) —
+  // training mode is just that preset, not a separate mode to maintain.
+  const trainingModeOn = tutorEnabled && aiTier.name === NOVICE_TIER.name;
+  const setTrainingMode = useCallback((on: boolean) => {
+    setTutorEnabled(on);
+    if (on) setAiTier(NOVICE_TIER);
+  }, []);
+
+  return {
+    state,
+    legalMoves,
+    submitMove,
+    startNewHand,
+    isHumanTurn,
+    completedTrick,
+    aiTier,
+    setAiTier,
+    tutorEnabled,
+    setTutorEnabled,
+    tutorAdvice,
+    trainingModeOn,
+    setTrainingMode,
+  };
 }

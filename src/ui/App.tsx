@@ -8,17 +8,34 @@ import { MeldDisplay } from './components/MeldDisplay.js';
 import { ResultBanner } from './components/ResultBanner.js';
 import { ScoreBoard } from './components/ScoreBoard.js';
 import { Trick } from './components/Trick.js';
+import { TutorPanel } from './components/TutorPanel.js';
 import { AI_ID, HUMAN_ID } from './playerIds.js';
 import { useGame } from './useGame.js';
 import { AI_TIERS } from '../agents/weightedAgent.js';
 import type { Move } from '../engine/types.js';
 
 export function App() {
-  const { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick, aiTier, setAiTier } = useGame();
+  const {
+    state,
+    legalMoves,
+    submitMove,
+    startNewHand,
+    isHumanTurn,
+    completedTrick,
+    aiTier,
+    setAiTier,
+    tutorEnabled,
+    setTutorEnabled,
+    tutorAdvice,
+    trainingModeOn,
+    setTrainingMode,
+  } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
   const human = state.players[HUMAN_ID];
   const opponent = state.players[AI_ID];
   const opponentThinking = state.turn === AI_ID && state.phase !== 'complete' && completedTrick === null;
+  const recommendedCardId =
+    tutorAdvice && tutorAdvice.move.type === 'playCard' ? tutorAdvice.move.cardId : null;
 
   const handlePlay = (cardId: string) => {
     submitMove({ type: 'playCard', playerId: HUMAN_ID, cardId });
@@ -38,6 +55,25 @@ export function App() {
       </div>
       <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
       <ScoreBoard state={state} />
+
+      <div className="assist-toggles">
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={tutorEnabled}
+            onChange={(e) => setTutorEnabled(e.target.checked)}
+          />
+          Tutor
+        </label>
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={trainingModeOn}
+            onChange={(e) => setTrainingMode(e.target.checked)}
+          />
+          Training mode
+        </label>
+      </div>
 
       <section className="opponent-area">
         <div className="opponent-header">
@@ -90,8 +126,9 @@ export function App() {
           )}
         </AnimatePresence>
         {isHumanTurn && state.stage === 'awaitingMeldDecision' && (
-          <MeldChoices legalMoves={legalMoves} onChoose={handleMeldChoice} />
+          <MeldChoices legalMoves={legalMoves} onChoose={handleMeldChoice} recommendedMove={tutorAdvice?.move} />
         )}
+        <AnimatePresence>{tutorAdvice && <TutorPanel advice={tutorAdvice} />}</AnimatePresence>
       </section>
 
       {state.phase === 'complete' && state.result && (
@@ -104,6 +141,7 @@ export function App() {
           hand={human.hand}
           legalMoves={isHumanTurn && state.stage !== 'awaitingMeldDecision' ? legalMoves : []}
           onPlay={handlePlay}
+          recommendedCardId={recommendedCardId}
         />
         <MeldDisplay melds={human.melds} label="Your melds" />
       </section>

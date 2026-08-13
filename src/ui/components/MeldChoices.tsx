@@ -5,9 +5,22 @@ import type { Move } from '../../engine/types.js';
 interface MeldChoicesProps {
   legalMoves: Move[];
   onChoose: (move: Move) => void;
+  recommendedMove?: Move | null;
 }
 
-export function MeldChoices({ legalMoves, onChoose }: MeldChoicesProps) {
+function isSameMove(a: Move, b: Move): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === 'declareMeld' && b.type === 'declareMeld') {
+    return (
+      a.meldKind === b.meldKind &&
+      a.cardIds.length === b.cardIds.length &&
+      a.cardIds.every((id) => b.cardIds.includes(id))
+    );
+  }
+  return a.type === 'pass' && b.type === 'pass';
+}
+
+export function MeldChoices({ legalMoves, onChoose, recommendedMove = null }: MeldChoicesProps) {
   const declareMoves = legalMoves.filter(
     (m): m is Extract<Move, { type: 'declareMeld' }> => m.type === 'declareMeld',
   );
@@ -22,14 +35,24 @@ export function MeldChoices({ legalMoves, onChoose }: MeldChoicesProps) {
           const suits = [...new Set(move.cardIds.map((id) => parseCardId(id).suit))];
           const suitLabel = suits.length === 1 ? ` (${suits[0]})` : '';
           return (
-            <button key={i} type="button" onClick={() => onChoose(move)}>
+            <button
+              key={i}
+              type="button"
+              data-recommended={recommendedMove ? isSameMove(move, recommendedMove) : false}
+              onClick={() => onChoose(move)}
+            >
               {MELD_KIND_LABELS[move.meldKind]}
               {suitLabel}
             </button>
           );
         })}
         {passMove && (
-          <button type="button" className="pass-button" onClick={() => onChoose(passMove)}>
+          <button
+            type="button"
+            className="pass-button"
+            data-recommended={recommendedMove ? isSameMove(passMove, recommendedMove) : false}
+            onClick={() => onChoose(passMove)}
+          >
             Pass
           </button>
         )}

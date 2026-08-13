@@ -15,9 +15,10 @@ interface CardProps {
   selectable?: boolean;
   onClick?: () => void;
   enterDelay?: number;
+  recommended?: boolean;
 }
 
-export function Card({ card, selectable = false, onClick, enterDelay = 0 }: CardProps) {
+export function Card({ card, selectable = false, onClick, enterDelay = 0, recommended = false }: CardProps) {
   const isRed = RED_SUITS.includes(card.suit);
   const symbol = SUIT_SYMBOL[card.suit];
   return (
@@ -28,6 +29,7 @@ export function Card({ card, selectable = false, onClick, enterDelay = 0 }: Card
       className="card"
       data-red={isRed}
       data-selectable={selectable}
+      data-recommended={recommended}
       disabled={!selectable}
       onClick={onClick}
       transition={{ layout: SPRING, default: { ...SPRING, delay: enterDelay } }}
