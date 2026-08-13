@@ -92,9 +92,10 @@ h1 {
 
 .assist-toggles {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 1.25rem;
+  gap: 0.6rem 1.25rem;
 }
 
 .toggle {
@@ -104,10 +105,12 @@ h1 {
   font-size: 0.82rem;
   opacity: 0.9;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .toggle input {
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* Scoreboard */
@@ -176,6 +179,7 @@ h1 {
   gap: 0.4rem;
   font-size: 0.72rem;
   opacity: 0.85;
+  flex-shrink: 0;
   text-transform: none;
   letter-spacing: normal;
 }

@@ -8,17 +8,7 @@ during play-testing.
 
 1. **Hand ordering** — should cards in hand be manually reorderable (drag), auto-sorted
    (by suit/rank), or a choice between the two? Needs a design decision.
-2. **Debug: dump live game state from code** — a way to serialize/inspect the current
-   `GameState` while developing, without going through the UI.
-3. **Debug: reconstruct a hand in the browser** — the inverse: load a specific hand/state
-   into a live game for testing a scenario directly, instead of playing up to it.
-4. **Better live-testing approach for Claude** — move off "always click the first legal
-   move" during automated browser verification. Largely unblocked by #2/#3: if a specific
-   scenario can be constructed directly, there's much less need to drive a full random
-   playthrough to reach it.
-5. **Step 7: cheat mode** — next item in the PROJECT-BRIEF.md build order.
-6. The tutor checkbox is cut off. Happened when "Insights" checkbox was added.
-   Maybe the checkboxes should be on their own line underneath the difficulty chooser.
+2. **Step 7: cheat mode** — next item in the PROJECT-BRIEF.md build order.
 
 ## Resolved
 
@@ -27,3 +17,11 @@ during play-testing.
   (`moves.ts` never retracts a prior meld's points); the class-reuse rule treats moving
   *up* within a class as cumulative, matching `ai-strategy-notes.md`'s "declare early,
   then upgrade" guidance.
+- **Debug: dump live game state from code** and **reconstruct a hand in the browser** —
+  both done together via `window.__bezique` (dev builds only), see `src/ui/useGame.ts`
+  and `src/engine/debugState.ts`.
+- **Better live-testing approach for Claude** — unblocked by the above: scenarios can now
+  be constructed directly via `makeDebugState` + `setState` instead of driving a random
+  playthrough to reach them.
+- **Tutor checkbox cut off** — the `.assist-toggles` row didn't wrap and the checkbox got
+  flex-shrunk. Fixed with `flex-wrap` on the row and `flex-shrink: 0` on the toggles/select.
