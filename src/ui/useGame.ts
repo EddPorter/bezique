@@ -122,11 +122,18 @@ export function useGame() {
   );
 
   // "A low/mid-tier AI opponent paired with the tutor turned on" (architecture plan §5) —
-  // training mode is just that preset, not a separate mode to maintain.
+  // training mode is just a one-click preset for that combination, not a separate mode
+  // to maintain. Turning it ON sets both; turning it OFF only relaxes the difficulty back
+  // to normal — it deliberately leaves the Tutor toggle alone, since wanting to stop
+  // practicing against an easy opponent isn't the same as wanting the advice to disappear.
   const trainingModeOn = tutorEnabled && aiTier.name === NOVICE_TIER.name;
   const setTrainingMode = useCallback((on: boolean) => {
-    setTutorEnabled(on);
-    if (on) setAiTier(NOVICE_TIER);
+    if (on) {
+      setTutorEnabled(true);
+      setAiTier(NOVICE_TIER);
+    } else {
+      setAiTier(CLUB_PLAYER_TIER);
+    }
   }, []);
 
   return {

@@ -57,7 +57,7 @@ export function App() {
       <ScoreBoard state={state} />
 
       <div className="assist-toggles">
-        <label className="toggle">
+        <label className="toggle" title="Shows move advice from the tutor.">
           <input
             type="checkbox"
             checked={tutorEnabled}
@@ -65,7 +65,10 @@ export function App() {
           />
           Tutor
         </label>
-        <label className="toggle">
+        <label
+          className="toggle"
+          title="Shortcut: turns the tutor on and sets the opponent to Novice. Turning it off only resets the difficulty — the tutor stays as you left it."
+        >
           <input
             type="checkbox"
             checked={trainingModeOn}
