@@ -100,7 +100,10 @@ function explainTopMove(state: GameState, playerId: PlayerId, top: ScoredMove, r
         ? `${label} costs you the least in meld potential.`
         : `${label} keeps your meld options open.`;
     case 'brisqueRisk': {
-      if (breakdown.brisqueRisk >= 0) {
+      // evaluateMove folds a tiny rank tiebreak (at most 8 * 0.01) into brisqueRisk so exact
+      // ties break deterministically by rank instead of hand order — a card affected only by
+      // that epsilon still has no REAL exposure and should read as safe, not risky.
+      if (breakdown.brisqueRisk > -0.1) {
         return `${label} is safe to lead — nothing threatens it, and it costs you no trump.`;
       }
       const isTrump = state.trumpSuit !== null && card.suit === state.trumpSuit;

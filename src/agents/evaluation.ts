@@ -328,7 +328,12 @@ export function evaluateMove(
         // off-suit, and they're needed for a trump marriage/sequence.
         exposure += trumpConservationValue(hand, state.trumpSuit);
       }
-      brisqueRisk = -exposure;
+      // Tiny tiebreak (same epsilon scale as the follow branches above): when two leads are
+      // otherwise identical in every real factor — e.g. two low, non-trump, non-brisque, non-
+      // meld-relevant cards — prefer to shed the lower rank first and keep the higher one,
+      // which has more latent chance of pairing into a future meld. Without this, ties fell
+      // back to hand order (deal order), which looked arbitrary to a player comparing options.
+      brisqueRisk = -exposure - rankValue(card.rank) * 0.01;
     }
   }
 

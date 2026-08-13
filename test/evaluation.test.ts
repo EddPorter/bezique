@@ -5,6 +5,7 @@ import {
   flatRiskEstimator,
   makeCardMemoryRiskEstimator,
 } from '../src/agents/evaluation.js';
+import { rankValue } from '../src/engine/cards.js';
 import { rubiconBezique } from '../src/engine/ruleset.js';
 import type { Card, GameState } from '../src/engine/types.js';
 
@@ -227,7 +228,7 @@ describe('evaluateMove: leading/discarding', () => {
     expect(result.brisqueRisk).toBeLessThan(0);
   });
 
-  it('applies no risk when leading a non-brisque card', () => {
+  it('applies no real risk when leading a non-brisque card (only a tiny rank tiebreak)', () => {
     const state = makeState({
       players: [
         { id: 0, hand: [c('S9-0', 'S', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
@@ -236,7 +237,7 @@ describe('evaluateMove: leading/discarding', () => {
     });
     const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'S9-0' };
     const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
-    expect(result.brisqueRisk).toBeCloseTo(0);
+    expect(result.brisqueRisk).toBeCloseTo(-rankValue('9') * 0.01, 5);
   });
 
   it('penalizes leading a trump card even when it is not a brisque', () => {
@@ -262,7 +263,7 @@ describe('evaluateMove: leading/discarding', () => {
     });
     const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'S9-0' };
     const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
-    expect(result.brisqueRisk).toBeCloseTo(0);
+    expect(result.brisqueRisk).toBeCloseTo(-rankValue('9') * 0.01, 5);
   });
 });
 
@@ -495,7 +496,7 @@ describe('evaluateMove: brisque significance scales with how close the game is (
     const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
     const result = evaluateMove(comfortableState, 0, move, UNIT_WEIGHTS, flatRiskEstimator);
     // Baseline significance (0.25) applies: brisqueValue(10) * flatRisk(0.15 for an Ace) * 0.25
-    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15 * 0.25, 5);
+    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15 * 0.25 - rankValue('A') * 0.01, 5);
   });
 
   it('applies full brisque significance when the meld scores are close to tied', () => {
@@ -508,7 +509,7 @@ describe('evaluateMove: brisque significance scales with how close the game is (
     });
     const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
     const result = evaluateMove(closeState, 0, move, UNIT_WEIGHTS, flatRiskEstimator);
-    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15, 5);
+    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15 - rankValue('A') * 0.01, 5);
   });
 
   it('applies full brisque significance late in the hand when a score is still under the rubicon line', () => {
@@ -522,7 +523,7 @@ describe('evaluateMove: brisque significance scales with how close the game is (
     });
     const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
     const result = evaluateMove(rubiconRiskState, 0, move, UNIT_WEIGHTS, flatRiskEstimator);
-    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15, 5);
+    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15 - rankValue('A') * 0.01, 5);
   });
 });
 

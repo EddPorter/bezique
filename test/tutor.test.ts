@@ -121,8 +121,26 @@ describe('getTutorAdvice', () => {
     });
     const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
     for (const { breakdown } of advice.ranked) {
-      expect(breakdown.brisqueRisk).toBeCloseTo(0);
+      // Only the tiny rank tiebreak remains (no real exposure with no trump suit set).
+      expect(Math.abs(breakdown.brisqueRisk)).toBeLessThan(0.1);
     }
+  });
+
+  it('breaks a genuine tie by rank, not by which card happens to come first in hand (reported by a user)', () => {
+    // Two cards with truly identical breakdowns before the tiebreak: neither is a brisque,
+    // neither is trump, and neither has any meld relevance (a lone King with no Queen of its
+    // suit, and a lone 7, in an otherwise empty hand). The HIGHER-rank card is listed FIRST
+    // in hand deliberately — before the rank tiebreak, a stable sort on equal totals would
+    // just return whichever came first in the array, which happened to look like "always
+    // picks the first card in hand" from the outside.
+    const state = makeState({
+      players: [
+        { id: 0, hand: [c('CK-0', 'C', 'K'), c('C7-0', 'C', '7')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'C7-0' });
   });
 
   it('prefers a non-trump lead over an equal-rank trump card, and says so', () => {
