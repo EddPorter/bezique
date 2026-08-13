@@ -23,12 +23,27 @@ body {
 }
 
 h1 {
-  text-align: center;
-  margin: 0.25rem 0 0.5rem;
+  margin: 0;
   font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.help-toggle {
+  position: absolute;
+  right: 0;
+  background: rgba(0, 0, 0, 0.3);
+  color: #f4f1e8;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Scoreboard */
@@ -351,4 +366,111 @@ button:hover {
 .result-banner p {
   margin: 0 0 0.75rem;
   font-size: 1rem;
+}
+
+/* Help sheet */
+
+.help-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 10;
+}
+
+.help-panel {
+  background: #123b28;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: -1.25rem;
+  background: #123b28;
+  padding: 0.25rem 0 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.help-header h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem;
+}
+
+.help-close {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: #f4f1e8;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0.1rem 0.5rem;
+}
+
+.help-panel section {
+  margin-bottom: 1.1rem;
+}
+
+.help-panel h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: #f1c40f;
+}
+
+.help-panel p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.help-note {
+  opacity: 0.8 !important;
+}
+
+.help-table-wrap {
+  overflow-x: auto;
+}
+
+.help-meld-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-bottom: 0.5rem;
+}
+
+.help-meld-table th,
+.help-meld-table td {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+
+.help-meld-table th {
+  opacity: 0.7;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.help-suit-note {
+  opacity: 0.65;
+  font-size: 0.78rem;
+  white-space: normal;
 }

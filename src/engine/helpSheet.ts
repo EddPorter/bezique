@@ -1,0 +1,90 @@
+import { SUIT_SYMBOL } from './cards.js';
+import { MELD_KIND_LABELS } from './meldLabels.js';
+import { requiredSlots } from './melds.js';
+import type { MeldKind, Ruleset } from './types.js';
+
+export interface MeldTableRow {
+  kind: MeldKind;
+  label: string;
+  cards: string;
+  suitNote?: string;
+  points: string;
+}
+
+export interface HelpSheetContent {
+  totalCards: number;
+  deckCopies: number;
+  cardsPerPlayer: number;
+  rankOrderHighToLow: string;
+  meldTable: MeldTableRow[];
+  rubiconThreshold: number;
+  gameBonus: number;
+  rubiconBonus: number;
+  lastTrickBonus: number;
+  brisqueValue: number;
+  roundTo: number;
+  carteBlanchePoints: number;
+}
+
+/** Marriage/sequence apply to any suit — shown with this one as a concrete example. */
+const REPRESENTATIVE_SUIT = 'S';
+
+const CLASS_DISPLAY_ORDER: Record<string, number> = { sequence: 0, bezique: 1, quartet: 2 };
+
+function formatCards(ruleset: Ruleset, kind: MeldKind): { cards: string; suitNote?: string } {
+  const def = ruleset.meldTable[kind];
+  const isSuitParameterized = def.class === 'sequence';
+  const slots = requiredSlots(ruleset, kind, isSuitParameterized ? REPRESENTATIVE_SUIT : undefined);
+  const cards = slots.map((s) => `${s.rank}${SUIT_SYMBOL[s.suit]}`).join(' ');
+  return {
+    cards,
+    suitNote: isSuitParameterized ? 'shown in spades — any suit qualifies; trumps score more' : undefined,
+  };
+}
+
+function formatPoints(ruleset: Ruleset, kind: MeldKind): string {
+  const def = ruleset.meldTable[kind];
+  return def.class === 'sequence' ? `${def.trumpPoints} trump / ${def.plainPoints} plain` : `${def.points}`;
+}
+
+/**
+ * Generates the help sheet directly from the ruleset config (architecture plan
+ * §7) — point values and card requirements come from the same `meldTable` /
+ * `requiredSlots` the engine uses to validate and score melds, so this can't
+ * drift out of sync with what's actually enforced. A second ruleset (a plain
+ * Bezique variant, say) gets its help sheet for free by calling this again.
+ */
+export function buildHelpSheetContent(ruleset: Ruleset): HelpSheetContent {
+  const meldTable: MeldTableRow[] = (Object.keys(ruleset.meldTable) as MeldKind[])
+    .map((kind) => {
+      const { cards, suitNote } = formatCards(ruleset, kind);
+      return {
+        kind,
+        label: MELD_KIND_LABELS[kind],
+        cards,
+        suitNote,
+        points: formatPoints(ruleset, kind),
+      };
+    })
+    .sort((a, b) => {
+      const defA = ruleset.meldTable[a.kind];
+      const defB = ruleset.meldTable[b.kind];
+      if (defA.class !== defB.class) return CLASS_DISPLAY_ORDER[defA.class]! - CLASS_DISPLAY_ORDER[defB.class]!;
+      return defA.classRank - defB.classRank;
+    });
+
+  return {
+    totalCards: ruleset.deckCopies * ruleset.suits.length * ruleset.ranks.length,
+    deckCopies: ruleset.deckCopies,
+    cardsPerPlayer: ruleset.cardsPerPlayer,
+    rankOrderHighToLow: ruleset.ranks.join(' > '),
+    meldTable,
+    rubiconThreshold: ruleset.rubiconThreshold,
+    gameBonus: ruleset.gameBonus,
+    rubiconBonus: ruleset.rubiconBonus,
+    lastTrickBonus: ruleset.lastTrickBonus,
+    brisqueValue: ruleset.brisqueValue,
+    roundTo: ruleset.roundTo,
+    carteBlanchePoints: ruleset.carteBlanchePoints,
+  };
+}

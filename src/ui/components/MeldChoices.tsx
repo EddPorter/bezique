@@ -1,18 +1,6 @@
 import { parseCardId } from '../../engine/cards.js';
+import { MELD_KIND_LABELS } from '../../engine/meldLabels.js';
 import type { Move } from '../../engine/types.js';
-
-const MELD_LABELS: Record<string, string> = {
-  marriage: 'Marriage',
-  sequence: 'Sequence',
-  bezique: 'Bezique',
-  doubleBezique: 'Double Bezique',
-  tripleBezique: 'Triple Bezique',
-  quadrupleBezique: 'Quadruple Bezique',
-  fourAces: 'Four Aces',
-  fourKings: 'Four Kings',
-  fourQueens: 'Four Queens',
-  fourJacks: 'Four Jacks',
-};
 
 interface MeldChoicesProps {
   legalMoves: Move[];
@@ -35,7 +23,7 @@ export function MeldChoices({ legalMoves, onChoose }: MeldChoicesProps) {
           const suitLabel = suits.length === 1 ? ` (${suits[0]})` : '';
           return (
             <button key={i} type="button" onClick={() => onChoose(move)}>
-              {MELD_LABELS[move.meldKind] ?? move.meldKind}
+              {MELD_KIND_LABELS[move.meldKind]}
               {suitLabel}
             </button>
           );

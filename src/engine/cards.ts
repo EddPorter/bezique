@@ -3,6 +3,8 @@ import type { Card, Rank, Suit } from './types.js';
 /** High to low, per rules spec §1. The 10 ranks second, just below the Ace. */
 const RANK_ORDER: readonly Rank[] = ['A', '10', 'K', 'Q', 'J', '9', '8', '7'];
 
+export const SUIT_SYMBOL: Record<Suit, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
+
 export function rankValue(rank: Rank): number {
   const index = RANK_ORDER.indexOf(rank);
   return RANK_ORDER.length - index;

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
+import { SUIT_SYMBOL } from '../../engine/cards.js';
 import type { Card as CardModel, Suit } from '../../engine/types.js';
 
-export const SUIT_SYMBOL: Record<Suit, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
 const RED_SUITS: readonly Suit[] = ['H', 'D'];
 
 export function isRedSuit(suit: Suit): boolean {

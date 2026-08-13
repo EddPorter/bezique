@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 import { CardBack } from './components/Card.js';
 import { Hand } from './components/Hand.js';
+import { HelpSheet } from './components/HelpSheet.js';
 import { MeldChoices } from './components/MeldChoices.js';
 import { MeldDisplay } from './components/MeldDisplay.js';
 import { ResultBanner } from './components/ResultBanner.js';
@@ -12,6 +14,7 @@ import type { Move } from '../engine/types.js';
 
 export function App() {
   const { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick } = useGame();
+  const [helpOpen, setHelpOpen] = useState(false);
   const human = state.players[HUMAN_ID];
   const opponent = state.players[AI_ID];
   const opponentThinking = state.turn === AI_ID && state.phase !== 'complete' && completedTrick === null;
@@ -26,7 +29,13 @@ export function App() {
 
   return (
     <div className="table">
-      <h1>Bezique</h1>
+      <div className="table-header">
+        <h1>Bezique</h1>
+        <button type="button" className="help-toggle" onClick={() => setHelpOpen(true)}>
+          Help
+        </button>
+      </div>
+      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
       <ScoreBoard state={state} />
 
       <section className="opponent-area">

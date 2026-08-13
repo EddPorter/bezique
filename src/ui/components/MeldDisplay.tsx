@@ -1,20 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { SUIT_SYMBOL, isRedSuit } from './Card.js';
-import { parseCardId } from '../../engine/cards.js';
+import { isRedSuit } from './Card.js';
+import { SUIT_SYMBOL, parseCardId } from '../../engine/cards.js';
+import { MELD_KIND_LABELS } from '../../engine/meldLabels.js';
 import type { MeldDeclaration } from '../../engine/types.js';
-
-const MELD_LABELS: Record<string, string> = {
-  marriage: 'Marriage',
-  sequence: 'Sequence',
-  bezique: 'Bezique',
-  doubleBezique: 'Double Bezique',
-  tripleBezique: 'Triple Bezique',
-  quadrupleBezique: 'Quadruple Bezique',
-  fourAces: 'Four Aces',
-  fourKings: 'Four Kings',
-  fourQueens: 'Four Queens',
-  fourJacks: 'Four Jacks',
-};
 
 /** Small, non-interactive stand-in for a card — melded cards stay playable from the
  * hand itself, so this is a summary view, not the same shared-animation element. */
@@ -50,7 +38,7 @@ export function MeldDisplay({ melds, label }: MeldDisplayProps) {
               transition={{ type: 'spring', stiffness: 400, damping: 28 }}
             >
               <span className="meld-group-label">
-                {MELD_LABELS[meld.kind] ?? meld.kind}
+                {MELD_KIND_LABELS[meld.kind]}
                 {meld.suit ? ` (${meld.suit})` : ''} · {meld.points}
               </span>
               <div className="meld-group-cards">
