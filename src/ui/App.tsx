@@ -28,6 +28,9 @@ export function App() {
     tutorEnabled,
     setTutorEnabled,
     tutorAdvice,
+    insightsEnabled,
+    setInsightsEnabled,
+    cardInsights,
     carteBlancheAnnouncement,
   } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
@@ -107,6 +110,7 @@ export function App() {
               onPlay={handlePlay}
               recommendedCardId={recommendedCardId}
               meldCardIds={humanMeldCardIds}
+              cardInsights={cardInsights}
             />
             <MeldDisplay melds={human.melds} label="Your melds" playedCardIds={playedCardIds} />
           </section>
@@ -123,6 +127,18 @@ export function App() {
             <label className="toggle" title="Shows move advice from the tutor.">
               <input type="checkbox" checked={tutorEnabled} onChange={(e) => setTutorEnabled(e.target.checked)} />
               Tutor
+            </label>
+
+            <label
+              className="toggle"
+              title="Hover a card in your hand to see how the evaluator scores playing it right now."
+            >
+              <input
+                type="checkbox"
+                checked={insightsEnabled}
+                onChange={(e) => setInsightsEnabled(e.target.checked)}
+              />
+              Insights
             </label>
 
             <label className="tier-select">

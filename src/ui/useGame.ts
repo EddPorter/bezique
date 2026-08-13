@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { evaluateMove, makeCardMemoryRiskEstimator, type EvaluationBreakdown } from '../agents/evaluation.js';
 import { HumanAgent } from '../agents/humanAgent.js';
 import { getTutorAdvice, type TutorAdvice } from '../agents/tutor.js';
 import type { Agent } from '../agents/types.js';
-import { CLUB_PLAYER_TIER, WeightedAgent, type TierConfig } from '../agents/weightedAgent.js';
+import { CLUB_PLAYER_TIER, EXPERT_TIER, WeightedAgent, type TierConfig } from '../agents/weightedAgent.js';
 import {
   applyMove,
   dealNewHand,
@@ -49,6 +50,7 @@ export function useGame() {
   const humanAgent = useRef(new HumanAgent()).current;
   const [aiTier, setAiTier] = useState<TierConfig>(CLUB_PLAYER_TIER);
   const [tutorEnabled, setTutorEnabled] = useState(false);
+  const [insightsEnabled, setInsightsEnabled] = useState(false);
   const agentsRef = useRef<[Agent, Agent]>([humanAgent, new WeightedAgent(AI_ID, aiTier)]);
 
   // The opponent can change tier mid-session (no persistence yet — that's step 8); keep the
@@ -157,6 +159,23 @@ export function useGame() {
     [tutorEnabled, isHumanTurn, legalMoves, state],
   );
 
+  // Debug/analysis view (distinct from the Tutor's single recommendation): scores EVERY
+  // legal card-play with the same shared evaluator (Expert weights + card-memory risk,
+  // regardless of the opponent's chosen difficulty, since this is meant to show the true
+  // model's view of the position, not the current opponent's). Only meaningful for
+  // playCard moves — melds/pass are covered by the meld choice list itself.
+  const cardInsights: Map<string, EvaluationBreakdown> | null = useMemo(() => {
+    if (!insightsEnabled || !isHumanTurn) return null;
+    const playCardMoves = legalMoves.filter((m): m is Extract<Move, { type: 'playCard' }> => m.type === 'playCard');
+    if (playCardMoves.length === 0) return null;
+    const riskEstimator = makeCardMemoryRiskEstimator();
+    const map = new Map<string, EvaluationBreakdown>();
+    for (const move of playCardMoves) {
+      map.set(move.cardId, evaluateMove(state, HUMAN_ID, move, EXPERT_TIER.weights, riskEstimator));
+    }
+    return map;
+  }, [insightsEnabled, isHumanTurn, legalMoves, state]);
+
   return {
     state,
     legalMoves,
@@ -169,6 +188,9 @@ export function useGame() {
     tutorEnabled,
     setTutorEnabled,
     tutorAdvice,
+    insightsEnabled,
+    setInsightsEnabled,
+    cardInsights,
     carteBlancheAnnouncement,
   };
 }

@@ -18,6 +18,8 @@ interface CardProps {
   recommended?: boolean;
   /** Part of one of your own currently-declared melds — playing it away would break that meld. */
   partOfMeld?: boolean;
+  /** Native hover tooltip text, e.g. the evaluator breakdown for the "Insights" debug view. */
+  title?: string;
 }
 
 export function Card({
@@ -27,6 +29,7 @@ export function Card({
   enterDelay = 0,
   recommended = false,
   partOfMeld = false,
+  title,
 }: CardProps) {
   const isRed = RED_SUITS.includes(card.suit);
   const symbol = SUIT_SYMBOL[card.suit];
@@ -49,6 +52,7 @@ export function Card({
       whileHover={selectable ? { y: -10 } : undefined}
       whileTap={selectable ? { scale: 0.95, y: -4 } : undefined}
       aria-label={`${card.rank} of ${card.suit}${partOfMeld ? ', part of a declared meld' : ''}`}
+      title={title}
     >
       <span className="card-corner card-corner-top">
         <span className="card-corner-rank">{card.rank}</span>
