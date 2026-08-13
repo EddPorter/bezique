@@ -165,13 +165,11 @@ export function findReplacementRedeclarations(
     let ok = true;
 
     for (const slot of missingSlots) {
+      // Rules spec §3: the substitute may be "either a fresh one from hand, or one
+      // borrowed from another standing meld" — any hand card of the right suit/rank
+      // qualifies, not only ones already committed to a different declared meld.
       const spare = hand.find(
-        (c) =>
-          c.suit === slot.suit &&
-          c.rank === slot.rank &&
-          !meld.cardIds.includes(c.id) &&
-          !usedAsSpare.has(c.id) &&
-          existingMelds.some((other) => other.id !== meld.id && other.cardIds.includes(c.id)),
+        (c) => c.suit === slot.suit && c.rank === slot.rank && !meld.cardIds.includes(c.id) && !usedAsSpare.has(c.id),
       );
       if (!spare) {
         ok = false;

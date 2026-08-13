@@ -175,6 +175,19 @@ describe('replacement re-declaration (rules spec §3 worked examples)', () => {
     const options = findReplacementRedeclarations(rubiconBezique, hand, [marriage], null);
     expect(options).toHaveLength(0);
   });
+
+  it('accepts a genuinely fresh, never-melded duplicate as the spare (reported by a user)', () => {
+    // Rules spec §3: "substituting a card — either a fresh one from hand, or one borrowed
+    // from another standing meld". A player declared K♥+Q♥, played the King away, and holds
+    // a SECOND King of Hearts that was never part of any other declared meld — this must
+    // still be offered as a valid replacement, not just spares borrowed from another meld.
+    const marriage = meld({ kind: 'marriage', class: 'sequence', suit: 'H', cardIds: ['HK-0', 'HQ-0'] });
+    const hand = [c('HQ-0', 'H', 'Q'), c('HK-1', 'H', 'K')]; // HK-0 played away; HK-1 is fresh, unmelded
+    const options = findReplacementRedeclarations(rubiconBezique, hand, [marriage], null);
+    const reformed = options.find((o) => o.replacesMeldId === marriage.id);
+    expect(reformed).toBeDefined();
+    expect(reformed!.cardIds.sort()).toEqual(['HK-1', 'HQ-0'].sort());
+  });
 });
 
 describe('findAllDeclarableMelds', () => {

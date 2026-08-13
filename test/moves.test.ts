@@ -172,6 +172,51 @@ describe('applyMove: a full trick with meld window and draw', () => {
     expect(state.stage).toBe('awaitingLead'); // draw happened automatically after the single meld
   });
 
+  it('reconstructs a marriage using a fresh, never-melded duplicate as the spare (reported by a user)', () => {
+    // K♥+Q♥ already declared and scored; the original King has since been played away
+    // (captured in tricksWon), and the player holds a second, entirely fresh King of Hearts
+    // that was never part of any other meld.
+    const existingMarriage = {
+      id: 'marriage-1',
+      kind: 'marriage' as const,
+      class: 'sequence' as const,
+      suit: 'H' as const,
+      cardIds: ['HK-0', 'HQ-0'],
+      points: 40,
+      declaredAtMoveIndex: 1,
+      lastScoredAtMoveIndex: 1,
+    };
+    let state = makeState({
+      stage: 'awaitingMeldDecision',
+      trumpSuit: 'H',
+      turn: 0,
+      cardMeldClassUsage: { 'HK-0': { sequence: 0 }, 'HQ-0': { sequence: 0 } },
+      tricksWon: { 0: [c('HK-0', 'H', 'K'), c('S7-0', 'S', '7')], 1: [] },
+      players: [
+        {
+          id: 0,
+          hand: [c('HQ-0', 'H', 'Q'), c('HK-1', 'H', 'K')],
+          melds: [existingMarriage],
+          score: 40,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+
+    const legalMoves = getLegalMoves(state, 0);
+    const replacementMove = legalMoves.find(
+      (m) => m.type === 'declareMeld' && m.cardIds.includes('HK-1'),
+    );
+    expect(replacementMove).toBeDefined();
+
+    state = applyMove(state, replacementMove!);
+    expect(state.players[0].score).toBe(80); // the trump marriage scored again
+    expect(state.players[0].melds).toHaveLength(2);
+    // The fresh spare must now be tracked, or it could illegally re-declare downward later.
+    expect(state.cardMeldClassUsage['HK-1']?.sequence).toBe(0);
+  });
+
   it('rejects a move played out of turn', () => {
     const state = makeState({
       players: [

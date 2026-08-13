@@ -181,7 +181,12 @@ function applyDeclareMeld(state: GameState, playerId: PlayerId, move: Extract<Mo
     score: player.score + points,
   });
 
-  if (!chosen.isReplacement) {
+  {
+    // Runs for replacement declarations too, not just fresh ones: a replacement spare can be
+    // a genuinely fresh card straight from hand (rules spec §3), never previously tracked in
+    // cardMeldClassUsage at all — without recording it here, that card's downward-reuse block
+    // for this class would silently never apply. For a spare borrowed from another standing
+    // meld (already tracked), this is a safe no-op: max() against its own existing rank.
     const cardMeldClassUsage = { ...next.cardMeldClassUsage };
     for (const cardId of chosen.cardIds) {
       const perCard = { ...(cardMeldClassUsage[cardId] ?? {}) };
