@@ -125,6 +125,23 @@ describe('getTutorAdvice', () => {
     }
   });
 
+  it('prefers a non-trump lead over an equal-rank trump card, and says so', () => {
+    // Same rank, same non-brisque status — the only difference is one is trump.
+    // Before accounting for trump conservation, evaluateMove scored these identically
+    // (both all-zero breakdowns), so the tutor fell back to "about as good as your
+    // other options" even though conserving the trump is clearly better.
+    const state = makeState({
+      trumpSuit: 'S',
+      players: [
+        { id: 0, hand: [c('S9-0', 'S', '9'), c('H9-0', 'H', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'H9-0' });
+    expect(advice.explanation).toMatch(/costs you no trump/);
+  });
+
   it('ranks every legal move in descending total order', () => {
     const state = makeState({
       players: [

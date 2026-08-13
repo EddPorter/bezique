@@ -14,6 +14,7 @@ import type { Card, GameState, Move, PlayerId, Suit } from '../engine/types.js';
 export interface EvaluationWeights {
   trickValue: number;
   meldProgress: number;
+  /** Exposure from leading/discarding: brisque capture risk AND the cost of giving up a trump card. */
   brisqueRisk: number;
   informationGivenAway: number;
 }
@@ -29,6 +30,10 @@ export interface EvaluationBreakdown {
 export function isBrisqueCard(card: Card): boolean {
   return card.rank === 'A' || card.rank === '10';
 }
+
+/** Flat value of holding onto a trump card rather than leading/discarding it, independent
+ * of whether it's also a brisque — scaled to be comparable to a typical brisque risk penalty. */
+const TRUMP_CONSERVATION_VALUE = 3;
 
 function findCardById(hand: Card[], id: string): Card {
   const card = hand.find((c) => c.id === id);
@@ -135,12 +140,23 @@ export function evaluateMove(
       } else {
         trickValue = -(isBrisqueCard(card) ? state.ruleset.brisqueValue : 0);
       }
-    } else if (isBrisqueCard(card)) {
+    } else {
       // Leading, or an unconstrained main-phase discard: no trick to resolve yet,
-      // just an exposure estimate. (Endgame leads get a more precise treatment via
-      // simulated lookahead in weightedAgent.ts, since the opponent is constrained
-      // there in ways this flat estimate doesn't model.)
-      brisqueRisk = -state.ruleset.brisqueValue * riskEstimator(state, playerId, card);
+      // just an exposure/conservation estimate. (Endgame leads get a more precise
+      // treatment via simulated lookahead in weightedAgent.ts, since the opponent
+      // is constrained there in ways this flat estimate doesn't model.)
+      let exposure = 0;
+      if (isBrisqueCard(card)) {
+        exposure += state.ruleset.brisqueValue * riskEstimator(state, playerId, card);
+      }
+      if (state.trumpSuit !== null && card.suit === state.trumpSuit) {
+        // Trumps are worth conserving even when they aren't brisques: they're the
+        // only cards that can win a trick off-suit, and they're needed for a trump
+        // marriage/sequence. TRUMP_CONSERVATION_VALUE is comparable in scale to a
+        // typical brisqueRisk penalty (brisqueValue * ~0.15-0.35).
+        exposure += TRUMP_CONSERVATION_VALUE;
+      }
+      brisqueRisk = -exposure;
     }
   }
 

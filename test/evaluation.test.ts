@@ -192,7 +192,33 @@ describe('evaluateMove: leading/discarding', () => {
     });
     const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'S9-0' };
     const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
-    expect(result.brisqueRisk).toBe(0);
+    expect(result.brisqueRisk).toBeCloseTo(0);
+  });
+
+  it('penalizes leading a trump card even when it is not a brisque', () => {
+    const state = makeState({
+      trumpSuit: 'S',
+      players: [
+        { id: 0, hand: [c('S9-0', 'S', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'S9-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.brisqueRisk).toBeLessThan(0);
+  });
+
+  it('does not penalize a non-trump, non-brisque lead even when trumps are in play', () => {
+    const state = makeState({
+      trumpSuit: 'D',
+      players: [
+        { id: 0, hand: [c('S9-0', 'S', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'S9-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.brisqueRisk).toBeCloseTo(0);
   });
 });
 

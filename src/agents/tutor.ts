@@ -99,10 +99,16 @@ function explainTopMove(state: GameState, playerId: PlayerId, top: ScoredMove, r
       return breakdown.meldProgress < 0
         ? `${label} costs you the least in meld potential.`
         : `${label} keeps your meld options open.`;
-    case 'brisqueRisk':
-      return breakdown.brisqueRisk < 0
-        ? `${label} is risky, but every other lead risks more.`
-        : `${label} is safe to lead — nothing threatens it right now.`;
+    case 'brisqueRisk': {
+      if (breakdown.brisqueRisk >= 0) {
+        return `${label} is safe to lead — nothing threatens it, and it costs you no trump.`;
+      }
+      const isTrump = state.trumpSuit !== null && card.suit === state.trumpSuit;
+      if (isTrump) {
+        return `${label} costs you a trump card, but every other lead costs more.`;
+      }
+      return `${label} is risky, but every other lead risks more.`;
+    }
     default:
       return `${label} gives away the least information.`;
   }
