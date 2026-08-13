@@ -321,3 +321,249 @@ describe('evaluateMove: weighting', () => {
     expect(result.total).toBeCloseTo(result.brisqueRisk * 3, 6);
   });
 });
+
+describe('evaluateMove: speculative meld progress (sourced, see docs/ai-strategy-notes.md)', () => {
+  it('gives no credit to a genuinely lone card with zero supporting cards', () => {
+    const state = makeState({
+      players: [
+        { id: 0, hand: [c('SQ-0', 'S', 'Q')], melds: [], score: 0, carteBlanchePoints: 0 }, // no J♦, no K♠
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SQ-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeCloseTo(0);
+  });
+
+  it('credits a card that partly builds toward Four Aces', () => {
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('SA-0', 'S', 'A'), c('HA-0', 'H', 'A'), c('DA-0', 'D', 'A')], // 3 of 4 aces
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeLessThan(0); // discarding it costs something
+    expect(result.meldProgress).toBeGreaterThan(-100); // but less than the full achieved-meld value
+  });
+
+  it('values more partial progress more (3 of 4 aces beats 1 of 4)', () => {
+    const strongState = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('SA-0', 'S', 'A'), c('HA-0', 'H', 'A'), c('DA-0', 'D', 'A')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const weakState = makeState({
+      players: [
+        { id: 0, hand: [c('SA-0', 'S', 'A'), c('HA-0', 'H', 'A')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
+    const strong = evaluateMove(strongState, 0, move, UNIT_WEIGHTS);
+    const weak = evaluateMove(weakState, 0, move, UNIT_WEIGHTS);
+    expect(strong.meldProgress).toBeLessThan(weak.meldProgress); // more to lose with more progress built
+  });
+
+  it('an already-achievable meld still dominates the discounted speculative estimate', () => {
+    // Holding K+Q of a suit (achievable marriage, 20pts) also has partial sequence progress —
+    // the real, undiscounted forfeit cost should win out over the speculative fraction.
+    const state = makeState({
+      players: [
+        { id: 0, hand: [c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SK-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeCloseTo(-20); // the achievable marriage's real value, not a discounted guess
+  });
+});
+
+describe('evaluateMove: spare-for-replacement value (sourced)', () => {
+  it('credits a spare duplicate that could refresh an already-declared meld', () => {
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('SQ-1', 'S', 'Q')], // a spare Queen of spades, not part of the meld below
+          melds: [
+            {
+              id: 'm1',
+              kind: 'marriage',
+              class: 'sequence',
+              suit: 'S',
+              cardIds: ['SK-0', 'SQ-0'],
+              points: 20,
+              declaredAtMoveIndex: 0,
+              lastScoredAtMoveIndex: 0,
+            },
+          ],
+          score: 20,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SQ-1' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeLessThan(0); // discarding the spare has a real cost
+  });
+
+  it('gives no spare value to a card that matches no standing meld', () => {
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('C7-0', 'C', '7')],
+          melds: [
+            {
+              id: 'm1',
+              kind: 'marriage',
+              class: 'sequence',
+              suit: 'S',
+              cardIds: ['SK-0', 'SQ-0'],
+              points: 20,
+              declaredAtMoveIndex: 0,
+              lastScoredAtMoveIndex: 0,
+            },
+          ],
+          score: 20,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'C7-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeCloseTo(0);
+  });
+});
+
+describe('evaluateMove: trump conservation tapers off with long trumps (sourced)', () => {
+  it('conserves a trump less when the hand already holds several', () => {
+    const shortTrumpState = makeState({
+      trumpSuit: 'S',
+      players: [
+        { id: 0, hand: [c('S9-0', 'S', '9'), c('S8-0', 'S', '8')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const longTrumpState = makeState({
+      trumpSuit: 'S',
+      players: [
+        {
+          id: 0,
+          hand: [c('S9-0', 'S', '9'), c('S8-0', 'S', '8'), c('S7-0', 'S', '7'), c('SJ-0', 'S', 'J'), c('C7-0', 'C', '7')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'S9-0' };
+    const short = evaluateMove(shortTrumpState, 0, move, UNIT_WEIGHTS);
+    const long = evaluateMove(longTrumpState, 0, move, UNIT_WEIGHTS);
+    expect(long.brisqueRisk).toBeGreaterThan(short.brisqueRisk); // less negative = conserved less strongly
+  });
+});
+
+describe('evaluateMove: brisque significance scales with how close the game is (sourced)', () => {
+  it('discounts brisque exposure when melds already decide the hand comfortably', () => {
+    const comfortableState = makeState({
+      deck: Array.from({ length: 30 }, (_, i) => c(`filler-${i}`, 'C', '7')), // plenty of stock left — not late in hand
+      players: [
+        { id: 0, hand: [c('SA-0', 'S', 'A')], melds: [], score: 1400, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 200, carteBlanchePoints: 0 }, // not close, not near rubicon
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
+    const result = evaluateMove(comfortableState, 0, move, UNIT_WEIGHTS, flatRiskEstimator);
+    // Baseline significance (0.25) applies: brisqueValue(10) * flatRisk(0.15 for an Ace) * 0.25
+    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15 * 0.25, 5);
+  });
+
+  it('applies full brisque significance when the meld scores are close to tied', () => {
+    const closeState = makeState({
+      deck: Array.from({ length: 30 }, (_, i) => c(`filler-${i}`, 'C', '7')),
+      players: [
+        { id: 0, hand: [c('SA-0', 'S', 'A')], melds: [], score: 1200, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 1210, carteBlanchePoints: 0 }, // a near-tie
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
+    const result = evaluateMove(closeState, 0, move, UNIT_WEIGHTS, flatRiskEstimator);
+    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15, 5);
+  });
+
+  it('applies full brisque significance late in the hand when a score is still under the rubicon line', () => {
+    const rubiconRiskState = makeState({
+      phase: 'endgame',
+      deck: [],
+      players: [
+        { id: 0, hand: [c('SA-0', 'S', 'A')], melds: [], score: 1500, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 400, carteBlanchePoints: 0 }, // trailing and under 1,000, late in the hand
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'SA-0' };
+    const result = evaluateMove(rubiconRiskState, 0, move, UNIT_WEIGHTS, flatRiskEstimator);
+    expect(result.brisqueRisk).toBeCloseTo(-10 * 0.15, 5);
+  });
+});
+
+describe('evaluateMove: declaring the trump-establishing meld (sourced + bugfix)', () => {
+  it('prices the first marriage/sequence of the hand at the trump rate, matching what applyMove actually pays', () => {
+    const state = makeState({
+      stage: 'awaitingMeldDecision',
+      players: [
+        { id: 0, hand: [c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'declareMeld' as const, playerId: 0 as const, meldKind: 'marriage' as const, cardIds: ['SK-0', 'SQ-0'] };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeGreaterThanOrEqual(40); // trump rate (40), not the plain rate (20)
+  });
+
+  it('adds a bonus for nominating trump in a suit the hand already has depth in', () => {
+    const deepState = makeState({
+      stage: 'awaitingMeldDecision',
+      players: [
+        {
+          id: 0,
+          hand: [c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q'), c('S9-0', 'S', '9'), c('S8-0', 'S', '8')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const shallowState = makeState({
+      stage: 'awaitingMeldDecision',
+      players: [
+        { id: 0, hand: [c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'declareMeld' as const, playerId: 0 as const, meldKind: 'marriage' as const, cardIds: ['SK-0', 'SQ-0'] };
+    const deep = evaluateMove(deepState, 0, move, UNIT_WEIGHTS);
+    const shallow = evaluateMove(shallowState, 0, move, UNIT_WEIGHTS);
+    expect(deep.meldProgress).toBeGreaterThan(shallow.meldProgress);
+  });
+});

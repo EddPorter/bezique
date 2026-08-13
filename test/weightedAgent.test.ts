@@ -30,6 +30,34 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 
 describe('WeightedAgent: club player tier', () => {
   it('declares the highest-value meld on offer', async () => {
+    // Trumps already set to D, so the S marriage stays at the plain rate (20) and doesn't
+    // get an establishes-trump boost — isolates "prefers the bigger meld" from that effect.
+    const state = makeState({
+      stage: 'awaitingMeldDecision',
+      turn: 0,
+      trumpSuit: 'D',
+      players: [
+        {
+          id: 0,
+          hand: [c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q'), c('SQ-1', 'S', 'Q'), c('DJ-0', 'D', 'J')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const agent = new WeightedAgent(0, { ...CLUB_PLAYER_TIER, thinkingDelayMs: 0 });
+    const legalMoves = getLegalMoves(state, 0);
+    const move = await agent.chooseMove(state, legalMoves);
+    expect(move.type).toBe('declareMeld');
+    if (move.type === 'declareMeld') expect(move.meldKind).toBe('bezique'); // 40 beats the 20-pt plain marriage
+  });
+
+  it('prefers establishing trump in a suit the hand is strong in, correctly priced at the trump rate', async () => {
+    // No trump set yet, and this hand has real depth in spades (K, Q, Q). Declaring the
+    // marriage here both establishes trump AND is priced at 40 (trump), not 20 (plain) —
+    // beating the flat 40-pt bezique once the suit-strength bonus is added.
     const state = makeState({
       stage: 'awaitingMeldDecision',
       turn: 0,
@@ -48,7 +76,7 @@ describe('WeightedAgent: club player tier', () => {
     const legalMoves = getLegalMoves(state, 0);
     const move = await agent.chooseMove(state, legalMoves);
     expect(move.type).toBe('declareMeld');
-    if (move.type === 'declareMeld') expect(move.meldKind).toBe('bezique'); // 40 beats the 20-pt marriage
+    if (move.type === 'declareMeld') expect(move.meldKind).toBe('marriage');
   });
 
   it('captures a cheap brisque when the lead card is worth taking', async () => {
