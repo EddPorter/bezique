@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ClubPlayerAgent } from '../agents/clubPlayerAgent.js';
 import { HumanAgent } from '../agents/humanAgent.js';
 import type { Agent } from '../agents/types.js';
+import { CLUB_PLAYER_TIER, WeightedAgent, type TierConfig } from '../agents/weightedAgent.js';
 import {
   applyMove,
   dealNewHand,
@@ -38,8 +38,15 @@ export interface CompletedTrick {
  */
 export function useGame() {
   const humanAgent = useRef(new HumanAgent()).current;
-  const aiAgent = useRef(new ClubPlayerAgent(AI_ID)).current;
-  const agents = useRef<[Agent, Agent]>([humanAgent, aiAgent]).current;
+  const [aiTier, setAiTier] = useState<TierConfig>(CLUB_PLAYER_TIER);
+  const agentsRef = useRef<[Agent, Agent]>([humanAgent, new WeightedAgent(AI_ID, aiTier)]);
+
+  // The opponent can change tier mid-session (no persistence yet — that's step 8); keep the
+  // agent instance in sync via a ref so the game-loop effect below always sees the latest one
+  // without needing `aiTier` in its own dependency array.
+  useEffect(() => {
+    agentsRef.current[1] = new WeightedAgent(AI_ID, aiTier);
+  }, [aiTier]);
 
   const [state, setState] = useState<GameState>(() => dealNewHand(rubiconBezique, AI_ID, makeRng(Date.now())));
   const [completedTrick, setCompletedTrick] = useState<CompletedTrick | null>(null);
@@ -65,7 +72,7 @@ export function useGame() {
     let cancelled = false;
     let pauseTimer: ReturnType<typeof setTimeout> | undefined;
 
-    agents[state.turn].chooseMove(state, legalMoves).then((move) => {
+    agentsRef.current[state.turn].chooseMove(state, legalMoves).then((move) => {
       if (cancelled) return;
 
       if (move.type === 'playCard' && state.stage === 'awaitingFollow' && state.currentTrick.leadCard) {
@@ -105,5 +112,5 @@ export function useGame() {
     [state, humanAgent],
   );
 
-  return { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick };
+  return { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick, aiTier, setAiTier };
 }

@@ -10,10 +10,11 @@ import { ScoreBoard } from './components/ScoreBoard.js';
 import { Trick } from './components/Trick.js';
 import { AI_ID, HUMAN_ID } from './playerIds.js';
 import { useGame } from './useGame.js';
+import { AI_TIERS } from '../agents/weightedAgent.js';
 import type { Move } from '../engine/types.js';
 
 export function App() {
-  const { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick } = useGame();
+  const { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick, aiTier, setAiTier } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
   const human = state.players[HUMAN_ID];
   const opponent = state.players[AI_ID];
@@ -39,7 +40,26 @@ export function App() {
       <ScoreBoard state={state} />
 
       <section className="opponent-area">
-        <h2>Opponent</h2>
+        <div className="opponent-header">
+          <h2>Opponent</h2>
+          <label className="tier-select">
+            <span>Difficulty</span>
+            <select
+              name="opponent-difficulty"
+              value={aiTier.name}
+              onChange={(e) => {
+                const next = AI_TIERS.find((t) => t.name === e.target.value);
+                if (next) setAiTier(next);
+              }}
+            >
+              {AI_TIERS.map((tier) => (
+                <option key={tier.name} value={tier.name}>
+                  {tier.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="hand">
           <AnimatePresence>
             {opponent.hand.map((card) => (
