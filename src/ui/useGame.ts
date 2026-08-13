@@ -2,15 +2,39 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ClubPlayerAgent } from '../agents/clubPlayerAgent.js';
 import { HumanAgent } from '../agents/humanAgent.js';
 import type { Agent } from '../agents/types.js';
-import { applyMove, dealNewHand, finalizeScoring, getLegalMoves, makeRng, rubiconBezique } from '../engine/index.js';
-import type { GameState, Move, PlayerId } from '../engine/types.js';
+import {
+  applyMove,
+  dealNewHand,
+  findCard,
+  finalizeScoring,
+  getLegalMoves,
+  makeRng,
+  resolveTrick,
+  rubiconBezique,
+} from '../engine/index.js';
+import type { Card, GameState, Move, PlayerId } from '../engine/types.js';
 import { AI_ID, HUMAN_ID } from './playerIds.js';
+
+/** How long a completed trick stays visible (both cards, winner highlighted) before clearing. */
+const TRICK_PAUSE_MS = 900;
+
+export interface CompletedTrick {
+  leadCard: Card;
+  leaderId: PlayerId;
+  followCard: Card;
+  followerId: PlayerId;
+  winnerId: PlayerId;
+}
 
 /**
  * Drives the game loop through the same Agent interface for both players
  * (architecture plan §5): whichever player owns the current turn gets asked
  * via `chooseMove`. The human agent's promise just stays pending until the
  * UI calls `submitMove`; the AI resolves on its own after a short "thinking" delay.
+ *
+ * A resolved trick is held in `completedTrick` for a beat before the engine
+ * move is actually applied, purely so the UI has time to show both cards and
+ * the winner — the engine itself resolves and clears a trick instantly.
  */
 export function useGame() {
   const humanAgent = useRef(new HumanAgent()).current;
@@ -18,8 +42,10 @@ export function useGame() {
   const agents = useRef<[Agent, Agent]>([humanAgent, aiAgent]).current;
 
   const [state, setState] = useState<GameState>(() => dealNewHand(rubiconBezique, AI_ID, makeRng(Date.now())));
+  const [completedTrick, setCompletedTrick] = useState<CompletedTrick | null>(null);
 
   const startNewHand = useCallback(() => {
+    setCompletedTrick(null);
     setState((prev) => {
       const nextDealer: PlayerId = prev.dealerId === 0 ? 1 : 0;
       return dealNewHand(rubiconBezique, nextDealer, makeRng(Date.now()));
@@ -37,18 +63,38 @@ export function useGame() {
     if (legalMoves.length === 0) return;
 
     let cancelled = false;
+    let pauseTimer: ReturnType<typeof setTimeout> | undefined;
+
     agents[state.turn].chooseMove(state, legalMoves).then((move) => {
       if (cancelled) return;
+
+      if (move.type === 'playCard' && state.stage === 'awaitingFollow' && state.currentTrick.leadCard) {
+        const leadCard = state.currentTrick.leadCard;
+        const leaderId = state.currentTrick.leaderId;
+        const followCard = findCard(state.players[state.turn].hand, move.cardId)!;
+        const winnerId = resolveTrick(leadCard, leaderId, followCard, state.turn, state.trumpSuit);
+        setCompletedTrick({ leadCard, leaderId, followCard, followerId: state.turn, winnerId });
+        pauseTimer = setTimeout(() => {
+          if (cancelled) return;
+          setCompletedTrick(null);
+          setState((current) => (current === state ? applyMove(current, move) : current));
+        }, TRICK_PAUSE_MS);
+        return;
+      }
+
       setState((current) => (current === state ? applyMove(current, move) : current));
     });
+
     return () => {
       cancelled = true;
+      if (pauseTimer) clearTimeout(pauseTimer);
     };
   }, [state]);
 
   // Derived purely from `state` (reactive) rather than the agent's internal ref field
   // (mutating that field doesn't itself trigger a re-render, so it can't drive the UI).
-  const isHumanTurn = state.turn === HUMAN_ID && state.phase !== 'scoring' && state.phase !== 'complete';
+  const isHumanTurn =
+    state.turn === HUMAN_ID && state.phase !== 'scoring' && state.phase !== 'complete' && completedTrick === null;
   const legalMoves: Move[] = isHumanTurn ? getLegalMoves(state, HUMAN_ID) : [];
 
   const submitMove = useCallback(
@@ -59,5 +105,5 @@ export function useGame() {
     [state, humanAgent],
   );
 
-  return { state, legalMoves, submitMove, startNewHand, isHumanTurn };
+  return { state, legalMoves, submitMove, startNewHand, isHumanTurn, completedTrick };
 }

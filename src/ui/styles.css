@@ -1,4 +1,5 @@
-/* Minimal, non-animated styling for the step-2 playable UI. Visual polish is a later build step. */
+/* Step 3: visual polish. Card faces, felt table, and the animations themselves
+   live in the components (Framer Motion) — this file is the static styling layer. */
 
 * {
   box-sizing: border-box;
@@ -6,15 +7,16 @@
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #1b5e3a;
-  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: radial-gradient(ellipse at top, #1f6b45 0%, #0f4029 70%, #0a2e1d 100%);
+  color: #f4f1e8;
+  min-height: 100vh;
 }
 
 .table {
-  max-width: 900px;
+  max-width: 920px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1.25rem 1rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -22,104 +24,146 @@ body {
 
 h1 {
   text-align: center;
-  margin: 0.5rem 0;
+  margin: 0.25rem 0 0.5rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
+
+/* Scoreboard */
 
 .scoreboard {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   padding: 0.75rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .scoreboard-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 5rem;
+  min-width: 5.5rem;
 }
 
 .scoreboard-label {
-  font-size: 0.75rem;
-  opacity: 0.75;
+  font-size: 0.68rem;
+  opacity: 0.7;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .scoreboard-value {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
+
+/* Player areas */
 
 .opponent-area,
 .human-area {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.85rem;
 }
 
 .opponent-area h2,
 .human-area h2 {
   margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  opacity: 0.85;
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .hand {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  min-height: 5.5rem;
+  gap: 0.5rem;
+  min-height: 6rem;
 }
 
+/* Cards */
+
 .card {
-  width: 3.2rem;
-  height: 4.6rem;
-  border-radius: 6px;
-  border: 1px solid #333;
-  background: #fff;
-  color: #111;
+  position: relative;
+  width: 3.6rem;
+  height: 5.1rem;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  background: linear-gradient(160deg, #fffdf6 0%, #f4ecd8 100%);
+  color: #1a1a1a;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  cursor: not-allowed;
-  opacity: 0.6;
+  font-family: Georgia, 'Times New Roman', serif;
   padding: 0;
+  cursor: not-allowed;
+  opacity: 0.62;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
 .card[data-red='true'] {
-  color: #c0392b;
+  color: #a3222b;
 }
 
 .card[data-selectable='true'] {
   cursor: pointer;
   opacity: 1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
 }
 
-.card[data-selectable='true']:hover {
-  transform: translateY(-4px);
+.card-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-size: 0.62rem;
+  font-weight: 700;
 }
 
-.card-rank {
-  font-size: 1rem;
+.card-corner-top {
+  top: 4px;
+  left: 4px;
 }
 
-.card-suit {
-  font-size: 1.1rem;
+.card-corner-bottom {
+  bottom: 4px;
+  right: 4px;
+  transform: rotate(180deg);
+}
+
+.card-corner-suit {
+  font-size: 0.68rem;
+}
+
+.card-center {
+  font-size: 1.7rem;
+  opacity: 0.92;
 }
 
 .card-back {
-  background: repeating-linear-gradient(45deg, #29527a, #29527a 4px, #1f3f5f 4px, #1f3f5f 8px);
-  border: 1px solid #0c1b2a;
+  background: repeating-linear-gradient(45deg, #2a5c86 0, #2a5c86 5px, #1c4667 5px, #1c4667 10px);
+  border: 1px solid #0c2033;
+  opacity: 1;
+  cursor: default;
 }
 
+/* Trick area */
+
 .middle-area {
-  min-height: 7rem;
+  min-height: 8.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -128,39 +172,83 @@ h1 {
 
 .trick {
   display: flex;
-  gap: 1rem;
-  align-items: center;
+  gap: 1.5rem;
+  align-items: flex-start;
   justify-content: center;
-  min-height: 4.6rem;
+  min-height: 5.5rem;
 }
 
 .trick-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
+}
+
+.trick-card[data-winner='true'] .card {
+  box-shadow: 0 0 0 3px #f1c40f, 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .trick-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   opacity: 0.8;
+}
+
+.trick-winner {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #f1c40f;
+  margin: 0;
 }
 
 .trick-empty {
   opacity: 0.6;
   font-size: 0.9rem;
+  align-self: center;
 }
 
 .thinking {
-  opacity: 0.8;
+  opacity: 0.85;
   font-style: italic;
+  margin: 0;
 }
 
+.thinking-dots span {
+  animation: pulse-dot 1.2s infinite;
+  opacity: 0.2;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* Meld choices */
+
 .meld-choices {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   padding: 0.75rem 1rem;
   text-align: center;
+}
+
+.meld-choices p {
+  margin: 0 0 0.5rem;
 }
 
 .meld-choices-buttons {
@@ -168,27 +256,99 @@ h1 {
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
-  margin-top: 0.5rem;
 }
+
+/* Meld display */
+
+.meld-display {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.meld-display-label {
+  font-size: 0.68rem;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.meld-display-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.meld-group {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.meld-group-label {
+  font-size: 0.68rem;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.meld-group-cards {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.mini-card {
+  background: #fffdf6;
+  color: #1a1a1a;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: Georgia, serif;
+}
+
+.mini-card[data-red='true'] {
+  color: #a3222b;
+}
+
+/* Buttons */
 
 button {
   font-family: inherit;
-  font-size: 0.9rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  border: 1px solid #0006;
-  background: #f1c40f;
-  color: #111;
+  font-size: 0.88rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  background: linear-gradient(160deg, #f6d247, #e0a91a);
+  color: #1a1200;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+button:hover {
+  filter: brightness(1.08);
 }
 
 .pass-button {
-  background: #ccc;
+  background: linear-gradient(160deg, #e2e2e2, #b9b9b9);
 }
 
+/* Result banner */
+
 .result-banner {
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
   padding: 1rem;
   text-align: center;
+}
+
+.result-banner p {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
 }

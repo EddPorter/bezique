@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { Card } from './Card.js';
 import type { Card as CardModel, Move } from '../../engine/types.js';
 
@@ -14,10 +15,18 @@ export function Hand({ hand, legalMoves, onPlay }: HandProps) {
       .map((m) => m.cardId),
   );
   return (
-    <div className="hand">
-      {hand.map((card) => (
-        <Card key={card.id} card={card} selectable={playableIds.has(card.id)} onClick={() => onPlay(card.id)} />
-      ))}
-    </div>
+    <motion.div layout className="hand">
+      <AnimatePresence>
+        {hand.map((card, i) => (
+          <Card
+            key={card.id}
+            card={card}
+            selectable={playableIds.has(card.id)}
+            onClick={() => onPlay(card.id)}
+            enterDelay={i * 0.035}
+          />
+        ))}
+      </AnimatePresence>
+    </motion.div>
   );
 }

@@ -99,7 +99,11 @@ export function findFreshDeclarableMelds(
       const candidates = (bySuitRank.get(slotKey(slot)) ?? []).filter((c) => {
         if (usedCardIds.has(c.id)) return false;
         const highestRankScored = cardMeldClassUsage[c.id]?.[def.class];
-        return highestRankScored === undefined || def.classRank >= highestRankScored;
+        // Strictly greater, not >=: a card already scored at this exact rank means the
+        // exact same kind (rank uniquely determines kind within a class in this ruleset),
+        // and re-declaring the identical still-standing combination isn't an "upgrade" —
+        // that's what the replacement mechanic is for, after the meld has been broken.
+        return highestRankScored === undefined || def.classRank > highestRankScored;
       });
       const pick = candidates[0];
       if (!pick) return; // can't fill this slot without downgrading a card or reusing an already-chosen one

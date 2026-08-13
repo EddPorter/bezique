@@ -99,6 +99,22 @@ describe('findFreshDeclarableMelds', () => {
     expect(options.find((o) => o.kind === 'sequence' && o.suit === 'S')).toBeDefined();
   });
 
+  it('does not offer a fresh re-declaration of the exact same still-standing meld (found via manual UI testing)', () => {
+    // A standing, never-broken Bezique shouldn't be re-scorable just by winning another trick —
+    // that's what the replacement mechanic (after the meld is broken) is specifically for.
+    const hand = [c('SQ-0', 'S', 'Q'), c('DJ-0', 'D', 'J')];
+    const usage: Record<string, Partial<Record<MeldClass, number>>> = { 'SQ-0': { bezique: 0 }, 'DJ-0': { bezique: 0 } };
+    const options = findFreshDeclarableMelds(rubiconBezique, hand, null, usage);
+    expect(options.find((o) => o.kind === 'bezique')).toBeUndefined();
+  });
+
+  it('still allows upgrading to a higher rank in the same class (single -> double bezique)', () => {
+    const hand = [c('SQ-0', 'S', 'Q'), c('SQ-1', 'S', 'Q'), c('DJ-0', 'D', 'J'), c('DJ-1', 'D', 'J')];
+    const usage: Record<string, Partial<Record<MeldClass, number>>> = { 'SQ-0': { bezique: 0 }, 'DJ-0': { bezique: 0 } };
+    const options = findFreshDeclarableMelds(rubiconBezique, hand, null, usage);
+    expect(options.find((o) => o.kind === 'doubleBezique')).toBeDefined();
+  });
+
   it('does not block reuse across different classes', () => {
     // The King has scored in 'sequence' already, but that should not block it from a 'quartet' meld.
     const hand = [c('SK-0', 'S', 'K'), c('HK-0', 'H', 'K'), c('DK-0', 'D', 'K'), c('CK-0', 'C', 'K')];

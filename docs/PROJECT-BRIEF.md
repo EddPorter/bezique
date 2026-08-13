@@ -39,7 +39,7 @@ A single-player Rubicon Bezique card game, playable entirely in the browser with
 
 1. ✅ Engine core (deck, deal, tricks, melds incl. replacement re-declaration, scoring) — TypeScript, no UI, console test harness against the worked examples in the rules spec
 2. ✅ Minimal playable UI — React, one mid-tier ("club player") AI, full game loop. No animation yet (static card rendering); trick resolution is instant with no lingering "both cards visible" moment — both deferred to step 3.
-3. Visual polish and animation (Framer Motion; consult the `frontend-design` skill for aesthetic direction)
+3. ✅ Visual polish and animation — Framer Motion. `frontend-design` skill wasn't available in this environment, so this pass used ad hoc design judgment instead. Felt table, real card-face styling, shared-layoutId card movement, a UI-layer trick-resolution pause (engine itself still resolves instantly — see architecture plan §6), a new meld display row (previously missing from the UI entirely), and a score count-up. Found and fixed a real engine bug in the process: a still-standing meld could be freshly re-declared for points again without ever being broken (class-rank reuse check used `>=` instead of `>`).
 4. Help sheet, generated from the ruleset config (not hand-written, so it can't drift from the engine)
 5. Additional AI tiers
 6. Training mode + tutor (built on the shared evaluation function)
