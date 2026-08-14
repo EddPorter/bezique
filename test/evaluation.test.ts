@@ -393,6 +393,47 @@ describe('evaluateMove: speculative meld progress (sourced, see docs/ai-strategy
     const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
     expect(result.meldProgress).toBeCloseTo(-20); // the achievable marriage's real value, not a discounted guess
   });
+
+  it('gives no phantom cost to a card whose only "support" is an already-declared, blocked meld (reported by a user)', () => {
+    // All four Kings declared as Four Kings and still all sitting in hand (melded cards stay
+    // in hand). Playing one away doesn't forfeit anything real — the 80 points are already
+    // permanently banked, and the class-reuse rule blocks fresh-redeclaring Four Kings with
+    // these same four cards ever again. Before this fix, speculativeMeldValue didn't know
+    // about that block and saw "all 3 other Kings present" as 100%-supported partial
+    // progress, pricing a break-up at a phantom -20 — enough to make the tutor recommend
+    // losing a trick with a low card instead of winning it with a now-spare King.
+    const fourKings = {
+      id: 'fourKings-1',
+      kind: 'fourKings' as const,
+      class: 'quartet' as const,
+      suit: undefined,
+      cardIds: ['SK-0', 'HK-0', 'DK-0', 'CK-0'],
+      points: 80,
+      declaredAtMoveIndex: 1,
+      lastScoredAtMoveIndex: 1,
+    };
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('SK-0', 'S', 'K'), c('HK-0', 'H', 'K'), c('DK-0', 'D', 'K'), c('CK-0', 'C', 'K')],
+          melds: [fourKings],
+          score: 80,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+      cardMeldClassUsage: {
+        'SK-0': { quartet: 0 },
+        'HK-0': { quartet: 0 },
+        'DK-0': { quartet: 0 },
+        'CK-0': { quartet: 0 },
+      },
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'HK-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeCloseTo(0);
+  });
 });
 
 describe('evaluateMove: spare-for-replacement value (sourced)', () => {

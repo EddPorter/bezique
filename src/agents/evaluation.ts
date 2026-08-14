@@ -156,6 +156,17 @@ function speculativeMeldValue(state: GameState, playerId: PlayerId, card: Card):
         }
       }
       if (supportingCount === 0) continue; // no partial progress — not what the sourced advice supports
+      // A supporting count that already covers every remaining slot means this combination
+      // is FULLY assembled from other hand cards right now — not "partial progress toward"
+      // anything. That's either genuinely fresh and freshly declarable (meldForfeitCost
+      // already prices it at full, undiscounted value) or it's the exact combination of an
+      // already-declared meld the player is still holding (blocked from fresh redeclaration
+      // by the class-reuse rule, and correctly worth 0 here — there's no real future scoring
+      // left in it). Without this, a card sitting in an already-declared, fully-intact meld
+      // (e.g. a King from a standing Four Kings) got priced as if breaking it up cost real
+      // points, when the points are already permanently banked regardless of what happens
+      // to the cards afterward.
+      if (supportingCount >= remainingSlots.length) continue;
 
       const fraction = supportingCount / remainingSlots.length;
       const value = meldPoints(def, suit, state.trumpSuit) * fraction * SPECULATIVE_MELD_DISCOUNT;
