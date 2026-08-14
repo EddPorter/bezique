@@ -6,10 +6,13 @@ during play-testing.
 
 ## Open
 
-1. **Step 7: cheat mode** — next item in the PROJECT-BRIEF.md build order.
+Nothing open right now.
 
 ## Resolved
 
+- **Step 7: cheat mode** — a "Cheat" checkbox reveals the opponent's hand face-up
+  (suit+rank sorted, non-interactive). Purely a display toggle in `App.tsx`; the
+  opponent's hand was already public data in `GameState`.
 - **Hand ordering** — a "Sort" select next to the "You" heading toggles between
   "Suit & rank" (default) and "Group melds" (melded cards cluster first, each group
   still suit+rank sorted, then the rest of the hand). No manual dragging. See

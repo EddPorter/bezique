@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { CarteBlancheBanner } from './components/CarteBlancheBanner.js';
-import { CardBack } from './components/Card.js';
+import { Card, CardBack } from './components/Card.js';
 import { Hand } from './components/Hand.js';
 import { HelpSheet } from './components/HelpSheet.js';
 import { MeldChoices } from './components/MeldChoices.js';
@@ -36,6 +36,7 @@ export function App() {
   } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
   const [handSortMode, setHandSortMode] = useState<HandSortMode>('suitRank');
+  const [cheatMode, setCheatMode] = useState(false);
   const human = state.players[HUMAN_ID];
   const opponent = state.players[AI_ID];
   const opponentThinking = state.turn === AI_ID && state.phase !== 'complete' && completedTrick === null;
@@ -47,6 +48,12 @@ export function App() {
   const playedCardIds = new Set([...state.tricksWon[0], ...state.tricksWon[1]].map((c) => c.id));
   const humanMeldCardIds = new Set(human.melds.flatMap((m) => m.cardIds));
   const sortedHumanHand = sortHand(human.hand, handSortMode, humanMeldCardIds);
+  // Cheat mode (PROJECT-BRIEF.md step 7): the opponent's hand is already public data in
+  // GameState (the engine always has full information — architecture plan §1), so this is
+  // purely a display toggle, never a state/legality change. Always suit+rank sorted for
+  // readability, independent of the human's own sort preference.
+  const opponentMeldCardIds = new Set(opponent.melds.flatMap((m) => m.cardIds));
+  const sortedOpponentHand = sortHand(opponent.hand, 'suitRank', opponentMeldCardIds);
 
   const handlePlay = (cardId: string) => {
     submitMove({ type: 'playCard', playerId: HUMAN_ID, cardId });
@@ -72,9 +79,11 @@ export function App() {
             <h2>Opponent</h2>
             <div className="hand">
               <AnimatePresence>
-                {opponent.hand.map((card) => (
-                  <CardBack key={card.id} card={card} />
-                ))}
+                {cheatMode
+                  ? sortedOpponentHand.map((card) => (
+                      <Card key={card.id} card={card} partOfMeld={opponentMeldCardIds.has(card.id)} />
+                    ))
+                  : opponent.hand.map((card) => <CardBack key={card.id} card={card} />)}
               </AnimatePresence>
             </div>
             <MeldDisplay melds={opponent.melds} label="Opponent's melds" playedCardIds={playedCardIds} />
@@ -158,6 +167,11 @@ export function App() {
                 onChange={(e) => setInsightsEnabled(e.target.checked)}
               />
               Insights
+            </label>
+
+            <label className="toggle" title="Reveals the opponent's hand. Doesn't affect their play.">
+              <input type="checkbox" checked={cheatMode} onChange={(e) => setCheatMode(e.target.checked)} />
+              Cheat
             </label>
 
             <label className="tier-select">
