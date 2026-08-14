@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { buildHelpSheetContent } from '../../engine/helpSheet.js';
 import { rubiconBezique } from '../../engine/ruleset.js';
 
@@ -11,7 +11,33 @@ interface HelpSheetProps {
 // Ruleset never changes at runtime — safe to build once at module scope.
 const content = buildHelpSheetContent(rubiconBezique);
 
+/** How close to an edge (px) counts as "there" for the scroll-fade cue below. */
+const SCROLL_EDGE_THRESHOLD = 4;
+
 export function HelpSheet({ open, onClose }: HelpSheetProps) {
+  const tableWrapRef = useRef<HTMLDivElement>(null);
+  // The meld table can be wider than the panel on narrow screens (`.help-table-wrap`
+  // scrolls horizontally) — without a visible cue that's indistinguishable from the
+  // text just being truncated. Tracks scroll position so a fade only shows on whichever
+  // edge(s) still have more content past them.
+  const [scrollCue, setScrollCue] = useState({ left: false, right: false });
+
+  const updateScrollCue = () => {
+    const el = tableWrapRef.current;
+    if (!el) return;
+    setScrollCue({
+      left: el.scrollLeft > SCROLL_EDGE_THRESHOLD,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - SCROLL_EDGE_THRESHOLD,
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    updateScrollCue();
+    window.addEventListener('resize', updateScrollCue);
+    return () => window.removeEventListener('resize', updateScrollCue);
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -59,7 +85,13 @@ export function HelpSheet({ open, onClose }: HelpSheetProps) {
 
             <section>
               <h3>Melds</h3>
-              <div className="help-table-wrap">
+              <div
+                className="help-table-wrap"
+                ref={tableWrapRef}
+                onScroll={updateScrollCue}
+                data-scroll-left={scrollCue.left}
+                data-scroll-right={scrollCue.right}
+              >
                 <table className="help-meld-table">
                   <thead>
                     <tr>

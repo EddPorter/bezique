@@ -64,7 +64,7 @@ export function App() {
   };
 
   return (
-    <div className="table">
+    <main className="table">
       <div className="table-header">
         <h1>Bezique</h1>
         <button type="button" className="help-toggle" onClick={() => setHelpOpen(true)}>
@@ -75,6 +75,10 @@ export function App() {
 
       <div className="game-layout">
         <div className="main-column">
+          <div className="scoreboard-mobile">
+            <ScoreBoard state={state} />
+          </div>
+
           <section className="opponent-area">
             <h2>Opponent</h2>
             <div className="hand">
@@ -145,7 +149,9 @@ export function App() {
         </div>
 
         <aside className="side-panel">
-          <ScoreBoard state={state} />
+          <div className="scoreboard-desktop">
+            <ScoreBoard state={state} />
+          </div>
 
           <AnimatePresence>
             {carteBlancheAnnouncement && <CarteBlancheBanner announcement={carteBlancheAnnouncement} />}
@@ -198,6 +204,6 @@ export function App() {
           )}
         </aside>
       </div>
-    </div>
+    </main>
   );
 }

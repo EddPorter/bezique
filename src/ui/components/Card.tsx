@@ -54,12 +54,14 @@ export function Card({
       aria-label={`${card.rank} of ${card.suit}${partOfMeld ? ', part of a declared meld' : ''}`}
       title={title}
     >
-      <span className="card-corner card-corner-top">
+      <span className="card-corner card-corner-top" aria-hidden="true">
         <span className="card-corner-rank">{card.rank}</span>
         <span className="card-corner-suit">{symbol}</span>
       </span>
-      <span className="card-center">{symbol}</span>
-      <span className="card-corner card-corner-bottom">
+      <span className="card-center" aria-hidden="true">
+        {symbol}
+      </span>
+      <span className="card-corner card-corner-bottom" aria-hidden="true">
         <span className="card-corner-rank">{card.rank}</span>
         <span className="card-corner-suit">{symbol}</span>
       </span>

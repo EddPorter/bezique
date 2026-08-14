@@ -51,6 +51,10 @@ body {
   overflow-y: auto;
 }
 
+.scoreboard-mobile {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .game-layout {
     flex-direction: column;
@@ -61,6 +65,17 @@ body {
     position: static;
     max-height: none;
     overflow-y: visible;
+  }
+
+  /* Score/trumps/stock/phase are important at-a-glance state — show them right at the
+     top on mobile instead of after the opponent's hand, trick, and your own hand. The
+     side panel's own copy is hidden here since it'd otherwise be duplicated further down. */
+  .scoreboard-mobile {
+    display: block;
+  }
+
+  .scoreboard-desktop {
+    display: none;
   }
 }
 
@@ -620,7 +635,35 @@ button[data-recommended='true'] {
 }
 
 .help-table-wrap {
+  position: relative;
   overflow-x: auto;
+}
+
+.help-table-wrap::before,
+.help-table-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0.5rem;
+  width: 1.5rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.help-table-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, #123b28, transparent);
+}
+
+.help-table-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, #123b28, transparent);
+}
+
+.help-table-wrap[data-scroll-left='true']::before,
+.help-table-wrap[data-scroll-right='true']::after {
+  opacity: 1;
 }
 
 .help-meld-table {
