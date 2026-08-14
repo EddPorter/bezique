@@ -10,6 +10,7 @@ import { ResultBanner } from './components/ResultBanner.js';
 import { ScoreBoard } from './components/ScoreBoard.js';
 import { Trick } from './components/Trick.js';
 import { TutorPanel } from './components/TutorPanel.js';
+import { HAND_SORT_MODES, sortHand, type HandSortMode } from './handSort.js';
 import { AI_ID, HUMAN_ID } from './playerIds.js';
 import { useGame } from './useGame.js';
 import { AI_TIERS } from '../agents/weightedAgent.js';
@@ -34,6 +35,7 @@ export function App() {
     carteBlancheAnnouncement,
   } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [handSortMode, setHandSortMode] = useState<HandSortMode>('suitRank');
   const human = state.players[HUMAN_ID];
   const opponent = state.players[AI_ID];
   const opponentThinking = state.turn === AI_ID && state.phase !== 'complete' && completedTrick === null;
@@ -44,6 +46,7 @@ export function App() {
   // both players identically.
   const playedCardIds = new Set([...state.tricksWon[0], ...state.tricksWon[1]].map((c) => c.id));
   const humanMeldCardIds = new Set(human.melds.flatMap((m) => m.cardIds));
+  const sortedHumanHand = sortHand(human.hand, handSortMode, humanMeldCardIds);
 
   const handlePlay = (cardId: string) => {
     submitMove({ type: 'playCard', playerId: HUMAN_ID, cardId });
@@ -103,9 +106,25 @@ export function App() {
           </section>
 
           <section className="human-area">
-            <h2>You</h2>
+            <div className="human-area-header">
+              <h2>You</h2>
+              <label className="tier-select hand-sort-select">
+                <span>Sort</span>
+                <select
+                  name="hand-sort-mode"
+                  value={handSortMode}
+                  onChange={(e) => setHandSortMode(e.target.value as HandSortMode)}
+                >
+                  {HAND_SORT_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <Hand
-              hand={human.hand}
+              hand={sortedHumanHand}
               legalMoves={isHumanTurn && state.stage !== 'awaitingMeldDecision' ? legalMoves : []}
               onPlay={handlePlay}
               recommendedCardId={recommendedCardId}

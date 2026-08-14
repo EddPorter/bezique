@@ -6,12 +6,14 @@ during play-testing.
 
 ## Open
 
-1. **Hand ordering** — should cards in hand be manually reorderable (drag), auto-sorted
-   (by suit/rank), or a choice between the two? Needs a design decision.
-2. **Step 7: cheat mode** — next item in the PROJECT-BRIEF.md build order.
+1. **Step 7: cheat mode** — next item in the PROJECT-BRIEF.md build order.
 
 ## Resolved
 
+- **Hand ordering** — a "Sort" select next to the "You" heading toggles between
+  "Suit & rank" (default) and "Group melds" (melded cards cluster first, each group
+  still suit+rank sorted, then the rest of the hand). No manual dragging. See
+  `src/ui/handSort.ts`.
 - **Bezique → Double Bezique upgrade scoring** — both count (40 + 500 = 540 total).
   Confirmed 2026-08-13: each declaration scores independently and additively
   (`moves.ts` never retracts a prior meld's points); the class-reuse rule treats moving
