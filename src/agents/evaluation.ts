@@ -1,7 +1,7 @@
 import { isBrisqueCard, rankValue } from '../engine/cards.js';
 import { buildDeck } from '../engine/deck.js';
 import { findAllDeclarableMelds, findFreshDeclarableMelds, meldPoints, requiredSlots } from '../engine/melds.js';
-import type { Card, GameState, MeldKind, Move, PlayerId, Suit } from '../engine/types.js';
+import type { Card, GameState, MeldKind, Move, PlayerId, Ruleset, Suit } from '../engine/types.js';
 
 export { isBrisqueCard } from '../engine/cards.js';
 
@@ -118,6 +118,46 @@ function meldForfeitCost(state: GameState, playerId: PlayerId, cardId: string): 
  * docs/ai-strategy-notes.md for the sourced reasoning behind this shape. */
 const SPECULATIVE_MELD_DISCOUNT = 0.25;
 
+/** Bezique-family kinds in ascending classRank order — index i scores (i+1) Q♠/J♦ pairs. */
+const BEZIQUE_FAMILY_KINDS: readonly MeldKind[] = ['bezique', 'doubleBezique', 'tripleBezique', 'quadrupleBezique'];
+
+function bezikeFamilyPointsForPairs(ruleset: Ruleset, pairs: number, trumpSuit: Suit | null): number {
+  if (pairs <= 0) return 0;
+  const kind = BEZIQUE_FAMILY_KINDS[Math.min(pairs, BEZIQUE_FAMILY_KINDS.length) - 1]!;
+  return meldPoints(ruleset.meldTable[kind], undefined, trumpSuit);
+}
+
+/**
+ * Speculative value of a Q♠ or J♦ card toward the Bezique family, by PAIR count rather
+ * than the generic per-slot fraction the rest of speculativeMeldValue uses. Every tier
+ * needs a matched pair of both cards — holding several spare Jacks with zero Queens isn't
+ * partial progress at all, since you can't score anything until you have at least one of
+ * both. The generic "how many remaining slots are filled" calculation can't see that: it
+ * priced 2 spare Jacks and 0 Queens as "14% of the way to Quadruple Bezique" (a real
+ * reported bug — the 4,500-point combo's size made even a tiny fraction dwarf every other
+ * card in the evaluation).
+ *
+ * Instead: only the card that's actually the CURRENT BOTTLENECK (removing it would lower
+ * min(Q♠ count, J♦ count)) gets credit, priced at the tier that many pairs would reach.
+ * A spare beyond what the other side supports contributes nothing — which also correctly
+ * produces the sourced "chase the third and fourth Bezique hard once you're already
+ * holding two" shape: the bottleneck side is whichever you have fewer of.
+ */
+function bezikeFamilySpeculativeValue(state: GameState, playerId: PlayerId, card: Card): number {
+  const isQS = card.suit === 'S' && card.rank === 'Q';
+  const isJD = card.suit === 'D' && card.rank === 'J';
+  if (!isQS && !isJD) return 0;
+
+  const hand = state.players[playerId].hand;
+  const totalQS = hand.filter((c) => c.suit === 'S' && c.rank === 'Q').length;
+  const totalJD = hand.filter((c) => c.suit === 'D' && c.rank === 'J').length;
+  const pairsWith = Math.min(totalQS, totalJD);
+  const pairsWithout = Math.min(totalQS - (isQS ? 1 : 0), totalJD - (isJD ? 1 : 0));
+  if (pairsWithout >= pairsWith) return 0; // not the bottleneck — a genuine spare
+
+  return bezikeFamilyPointsForPairs(state.ruleset, pairsWith, state.trumpSuit) * SPECULATIVE_MELD_DISCOUNT;
+}
+
 /**
  * Credit for a card that partly builds toward a meld it isn't part of an achievable
  * combination for yet — e.g. holding 2 of the 4 Aces needed for Four Aces, or an extra
@@ -133,10 +173,13 @@ const SPECULATIVE_MELD_DISCOUNT = 0.25;
 function speculativeMeldValue(state: GameState, playerId: PlayerId, card: Card): number {
   const hand = state.players[playerId].hand;
   const ruleset = state.ruleset;
-  let best = 0;
+  let best = bezikeFamilySpeculativeValue(state, playerId, card);
 
   for (const kind of Object.keys(ruleset.meldTable) as MeldKind[]) {
     const def = ruleset.meldTable[kind];
+    // The Bezique family (Q♠+J♦, repeated 1-4 times) is handled separately below — see
+    // bezikeFamilySpeculativeValue for why the generic per-slot fraction below doesn't fit it.
+    if (def.class === 'bezique') continue;
     const suitsToCheck = def.class === 'sequence' ? [card.suit] : [undefined];
     for (const suit of suitsToCheck) {
       const slots = requiredSlots(ruleset, kind, suit);

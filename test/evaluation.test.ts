@@ -434,6 +434,80 @@ describe('evaluateMove: speculative meld progress (sourced, see docs/ai-strategy
     const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
     expect(result.meldProgress).toBeCloseTo(0);
   });
+
+  it('gives no Bezique-family credit to spare Jacks when holding zero Queens of Spades (reported by a user)', () => {
+    // Two J♦ and no Q♠ at all — you can't score even a single Bezique without a Queen, so
+    // holding extra Jacks isn't "partial progress toward Quadruple Bezique." Before this
+    // fix, the generic per-slot fraction saw "1 of the 7 remaining slots filled" (14%) and
+    // discounted a chunk of the 4,500-point Quadruple Bezique value, dwarfing every other
+    // card in the hand.
+    const state = makeState({
+      players: [
+        { id: 0, hand: [c('DJ-0', 'D', 'J'), c('DJ-1', 'D', 'J')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 0 as const, cardId: 'DJ-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBeCloseTo(0);
+  });
+
+  it('credits only the Bezique-family card that is the actual pair bottleneck', () => {
+    // 1 Q♠ + 2 J♦: only 1 pair achievable regardless of which Jack you keep. Playing away
+    // the sole Queen costs the achievable pair; playing away either spare Jack costs nothing.
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [c('SQ-0', 'S', 'Q'), c('DJ-0', 'D', 'J'), c('DJ-1', 'D', 'J')],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const playQueen = evaluateMove(state, 0, { type: 'playCard', playerId: 0, cardId: 'SQ-0' }, UNIT_WEIGHTS);
+    // DJ-1, not DJ-0: meldForfeitCost's findFreshDeclarableMelds only ever generates ONE
+    // achievable Bezique option per kind (whichever Jack comes first in hand order), so
+    // DJ-0 would carry that real, separate "immediately achievable" cost too — DJ-1 is the
+    // one genuinely uninvolved in any currently-declarable option, isolating just the
+    // speculative bottleneck logic this test is about.
+    const playSpareJack = evaluateMove(state, 0, { type: 'playCard', playerId: 0, cardId: 'DJ-1' }, UNIT_WEIGHTS);
+    expect(playQueen.meldProgress).toBeLessThan(playSpareJack.meldProgress);
+    expect(playSpareJack.meldProgress).toBeCloseTo(0);
+  });
+
+  it('shifts the bottleneck as pair counts change (chase the third/fourth Bezique, sourced)', () => {
+    // 2 Q♠ + 3 J♦: two pairs achievable (Double Bezique level). Queens are now the
+    // bottleneck (only 2 of them), so losing one costs real speculative value; the third,
+    // spare Jack costs nothing.
+    const state = makeState({
+      players: [
+        {
+          id: 0,
+          hand: [
+            c('SQ-0', 'S', 'Q'),
+            c('SQ-1', 'S', 'Q'),
+            c('DJ-0', 'D', 'J'),
+            c('DJ-1', 'D', 'J'),
+            c('DJ-2', 'D', 'J'),
+          ],
+          melds: [],
+          score: 0,
+          carteBlanchePoints: 0,
+        },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const playQueen = evaluateMove(state, 0, { type: 'playCard', playerId: 0, cardId: 'SQ-0' }, UNIT_WEIGHTS);
+    // DJ-2, not DJ-0/DJ-1: the one achievable Double Bezique option findFreshDeclarableMelds
+    // generates uses whichever two Jacks come first in hand order (DJ-0, DJ-1) — DJ-2 is the
+    // genuinely uninvolved third spare, isolating just the speculative bottleneck logic.
+    const playSpareJack = evaluateMove(state, 0, { type: 'playCard', playerId: 0, cardId: 'DJ-2' }, UNIT_WEIGHTS);
+    expect(playQueen.meldProgress).toBeLessThan(0);
+    expect(playSpareJack.meldProgress).toBeCloseTo(0);
+  });
 });
 
 describe('evaluateMove: spare-for-replacement value (sourced)', () => {
