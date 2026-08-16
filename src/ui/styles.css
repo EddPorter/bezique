@@ -95,9 +95,27 @@ h1 {
   margin: 0.25rem 0 0.5rem;
 }
 
-.help-toggle {
+.table-header-buttons {
   position: absolute;
   right: 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  /* Two header buttons no longer fit beside the centered title without overlapping it —
+     stack the title above a centered button row instead. */
+  .table-header {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .table-header-buttons {
+    position: static;
+  }
+}
+
+.help-toggle {
   background: rgba(0, 0, 0, 0.3);
   color: #f4f1e8;
   border: 1px solid rgba(255, 255, 255, 0.2);

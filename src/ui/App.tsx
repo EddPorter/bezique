@@ -67,9 +67,22 @@ export function App() {
     <main className="table">
       <div className="table-header">
         <h1>Bezique</h1>
-        <button type="button" className="help-toggle" onClick={() => setHelpOpen(true)}>
-          Help
-        </button>
+        <div className="table-header-buttons">
+          <button
+            type="button"
+            className="help-toggle"
+            onClick={() => {
+              if (state.phase === 'complete' || window.confirm('Start a new game? The current hand will be lost.')) {
+                startNewHand();
+              }
+            }}
+          >
+            New Game
+          </button>
+          <button type="button" className="help-toggle" onClick={() => setHelpOpen(true)}>
+            Help
+          </button>
+        </div>
       </div>
       <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
 
