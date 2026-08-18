@@ -7,7 +7,7 @@ import { AI_ID, HUMAN_ID } from '../playerIds.js';
 const PHASE_LABELS: Record<GameState['phase'], string> = {
   dealing: 'Dealing',
   main: 'Main phase',
-  endgame: 'Endgame — must follow suit and win if able',
+  endgame: 'Endgame',
   scoring: 'Scoring',
   complete: 'Hand complete',
 };
