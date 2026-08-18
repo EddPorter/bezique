@@ -192,6 +192,33 @@ describe('replacement re-declaration (rules spec §3 worked examples)', () => {
     expect(options.find((o) => o.replacesMeldId === marriageA.id)).toBeUndefined();
   });
 
+  it('does not offer the same reconstructed combination twice when two meld records share a lineage (reported by a user)', () => {
+    // sequenceA (A♦-0, 10♦, K♦-0, Q♦, J♦) had its King played away and was reconstructed
+    // once already as sequenceB, substituting K♦-1 — a separate meld record. Later, the
+    // Ace (A♦-0, shared by both records) is ALSO played away. With only one spare Ace
+    // (A♦-1) and one spare King (K♦-1) now in hand, reconstructing EITHER record converges
+    // on the exact same final 5 cards — that's one real option, not two, even though it
+    // comes from two different existing meld records.
+    const sequenceA = meld({
+      kind: 'sequence',
+      class: 'sequence',
+      suit: 'D',
+      cardIds: ['DA-0', 'D10-0', 'DK-0', 'DQ-0', 'DJ-0'],
+    });
+    const sequenceB = meld({
+      kind: 'sequence',
+      class: 'sequence',
+      suit: 'D',
+      cardIds: ['DA-0', 'D10-0', 'DK-1', 'DQ-0', 'DJ-0'],
+    });
+    // DA-0 and DK-0 both played away; D10-0/DQ-0/DJ-0/DK-1 still in hand, plus one spare Ace.
+    const hand = [c('D10-0', 'D', '10'), c('DK-1', 'D', 'K'), c('DQ-0', 'D', 'Q'), c('DJ-0', 'D', 'J'), c('DA-1', 'D', 'A')];
+    const options = findReplacementRedeclarations(rubiconBezique, hand, [sequenceA, sequenceB], 'D');
+    const sequenceOptions = options.filter((o) => o.kind === 'sequence');
+    expect(sequenceOptions).toHaveLength(1);
+    expect(sequenceOptions[0]!.cardIds.sort()).toEqual(['D10-0', 'DA-1', 'DJ-0', 'DK-1', 'DQ-0'].sort());
+  });
+
   it('accepts a genuinely fresh, never-melded duplicate as the spare (reported by a user)', () => {
     // Rules spec §3: "substituting a card — either a fresh one from hand, or one borrowed
     // from another standing meld". A player declared K♥+Q♥, played the King away, and holds

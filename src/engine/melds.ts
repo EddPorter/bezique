@@ -215,6 +215,20 @@ export function findReplacementRedeclarations(
     );
     if (duplicatesAStandingMeld) continue;
 
+    // Reject a reconstruction that exactly duplicates one ALREADY produced this call, from
+    // a DIFFERENT existing meld record. Two meld records can be "the same underlying meld"
+    // at different points in its replacement history (e.g. sequence-42 is itself an earlier
+    // reconstruction of sequence-36, after one of ITS cards was later played away too) — with
+    // only one genuine spare of each missing rank available in hand, reconstructing either
+    // record converges on the identical final card set. That's one real option, not two.
+    const alreadyProduced = results.some(
+      (r) =>
+        r.kind === meld.kind &&
+        r.cardIds.length === reconstructed.length &&
+        r.cardIds.every((id) => reconstructed.includes(id)),
+    );
+    if (alreadyProduced) continue;
+
     const def = ruleset.meldTable[meld.kind]!;
     results.push({
       kind: meld.kind,
