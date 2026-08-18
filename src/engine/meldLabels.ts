@@ -13,4 +13,9 @@ export const MELD_KIND_LABELS: Record<MeldKind, string> = {
   fourKings: 'Four Kings',
   fourQueens: 'Four Queens',
   fourJacks: 'Four Jacks',
+  fourTrumpAces: 'Four Trump Aces',
+  fourTrumpTens: 'Four Trump Tens',
+  fourTrumpKings: 'Four Trump Kings',
+  fourTrumpQueens: 'Four Trump Queens',
+  fourTrumpJacks: 'Four Trump Jacks',
 };

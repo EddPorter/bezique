@@ -159,7 +159,7 @@ function applyDeclareMeld(state: GameState, playerId: PlayerId, move: Extract<Mo
 
   // A marriage/sequence that establishes trumps (first of the hand) scores at the trump rate itself.
   const establishesTrump = state.trumpSuit === null && (chosen.kind === 'marriage' || chosen.kind === 'sequence');
-  const def = state.ruleset.meldTable[chosen.kind];
+  const def = state.ruleset.meldTable[chosen.kind]!;
   const points = establishesTrump && def.class === 'sequence' ? def.trumpPoints : chosen.points;
 
   const moveIndex = state.history.length;

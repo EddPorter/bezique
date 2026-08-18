@@ -1,5 +1,6 @@
 export * from './types.js';
 export { rubiconBezique } from './ruleset.js';
+export { chineseBezique } from './chineseBezique.js';
 export { buildDeck, deal, drawTop, makeRng, shuffle, type Rng } from './deck.js';
 export {
   SUIT_SYMBOL,

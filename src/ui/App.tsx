@@ -13,6 +13,7 @@ import { TutorPanel } from './components/TutorPanel.js';
 import { HAND_SORT_MODES, sortHand, type HandSortMode } from './handSort.js';
 import { AI_ID, HUMAN_ID } from './playerIds.js';
 import { useGame } from './useGame.js';
+import { VARIANTS } from './variants.js';
 import { AI_TIERS } from '../agents/weightedAgent.js';
 import type { Move } from '../engine/types.js';
 
@@ -22,6 +23,8 @@ export function App() {
     legalMoves,
     submitMove,
     startNewHand,
+    variant,
+    changeVariant,
     isHumanTurn,
     completedTrick,
     aiTier,
@@ -63,6 +66,10 @@ export function App() {
     submitMove(move);
   };
 
+  /** Shared by "New Game" and the variant switch — both discard the current hand. */
+  const confirmDiscardInProgress = (message: string) =>
+    state.phase === 'complete' || window.confirm(message);
+
   return (
     <main className="table">
       <div className="table-header">
@@ -72,7 +79,7 @@ export function App() {
             type="button"
             className="help-toggle"
             onClick={() => {
-              if (state.phase === 'complete' || window.confirm('Start a new game? The current hand will be lost.')) {
+              if (confirmDiscardInProgress('Start a new game? The current hand will be lost.')) {
                 startNewHand();
               }
             }}
@@ -84,7 +91,7 @@ export function App() {
           </button>
         </div>
       </div>
-      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} ruleset={state.ruleset} variantName={variant.name} />
 
       <div className="game-layout">
         <div className="main-column">
@@ -206,6 +213,26 @@ export function App() {
                 {AI_TIERS.map((tier) => (
                   <option key={tier.name} value={tier.name}>
                     {tier.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="tier-select" title="Switching starts a new game under the chosen ruleset.">
+              <span>Variant</span>
+              <select
+                name="game-variant"
+                value={variant.name}
+                onChange={(e) => {
+                  const next = VARIANTS.find((v) => v.name === e.target.value);
+                  if (next && next.name !== variant.name && confirmDiscardInProgress(`Switch to ${next.name}? The current hand will be lost.`)) {
+                    changeVariant(next);
+                  }
+                }}
+              >
+                {VARIANTS.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name}
                   </option>
                 ))}
               </select>

@@ -124,7 +124,7 @@ const BEZIQUE_FAMILY_KINDS: readonly MeldKind[] = ['bezique', 'doubleBezique', '
 function bezikeFamilyPointsForPairs(ruleset: Ruleset, pairs: number, trumpSuit: Suit | null): number {
   if (pairs <= 0) return 0;
   const kind = BEZIQUE_FAMILY_KINDS[Math.min(pairs, BEZIQUE_FAMILY_KINDS.length) - 1]!;
-  return meldPoints(ruleset.meldTable[kind], undefined, trumpSuit);
+  return meldPoints(ruleset.meldTable[kind]!, undefined, trumpSuit);
 }
 
 /**
@@ -176,11 +176,22 @@ function speculativeMeldValue(state: GameState, playerId: PlayerId, card: Card):
   let best = bezikeFamilySpeculativeValue(state, playerId, card);
 
   for (const kind of Object.keys(ruleset.meldTable) as MeldKind[]) {
-    const def = ruleset.meldTable[kind];
+    const def = ruleset.meldTable[kind]!;
     // The Bezique family (Q♠+J♦, repeated 1-4 times) is handled separately below — see
     // bezikeFamilySpeculativeValue for why the generic per-slot fraction below doesn't fit it.
     if (def.class === 'bezique') continue;
-    const suitsToCheck = def.class === 'sequence' ? [card.suit] : [undefined];
+    // Trump-scoped quartets (Chinese Bezique) only ever resolve against the CURRENT trump
+    // suit, not an arbitrary/undefined one — passing undefined would make every slot's suit
+    // undefined too, so it could never match a real hand card and would silently always
+    // contribute zero. With no trump set yet, there's nothing valid to check at all.
+    const suitsToCheck =
+      def.class === 'sequence'
+        ? [card.suit]
+        : def.suitScope === 'trump'
+          ? state.trumpSuit !== null
+            ? [state.trumpSuit]
+            : []
+          : [undefined];
     for (const suit of suitsToCheck) {
       const slots = requiredSlots(ruleset, kind, suit);
       const selfSlotIndex = slots.findIndex((s) => s.suit === card.suit && s.rank === card.rank);
@@ -330,7 +341,7 @@ export function evaluateMove(
     // matters doubly here: it's the true value, and it's also what lets different candidate
     // suits be compared at all — before this fix every untrumped marriage looked identical.
     const establishesTrump = state.trumpSuit === null && (move.meldKind === 'marriage' || move.meldKind === 'sequence');
-    const def = state.ruleset.meldTable[move.meldKind];
+    const def = state.ruleset.meldTable[move.meldKind]!;
     const points =
       establishesTrump && def.class === 'sequence' && chosen ? def.trumpPoints : (chosen?.points ?? 0);
     meldProgress = points;

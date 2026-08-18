@@ -25,7 +25,7 @@ A single-player Rubicon Bezique card game, playable entirely in the browser with
 
 | Decision | Choice | Why |
 |---|---|---|
-| Variant | Rubicon Bezique (128 cards, 4×32) | See rules spec §0 for sourcing |
+| Variant | Rubicon Bezique (128 cards, 4×32), plus Chinese/Six-Pack Bezique (192 cards, 6×32) as a second config-driven ruleset | See rules spec §0 for Rubicon sourcing; `chinese-bezique-rules-spec.md` for the second variant |
 | Rubicon threshold | 1,000 points | Quadruple-sourced incl. the 1887 Portland Club primary source |
 | Brisques scoring | Count only for tie-breaking / rubicon-avoidance | Confirmed by primary source (Laws 56, 60, 61); rubiconed loser's own score under 100 rounds up to 100 before adding (Law 59) |
 | Exact-tie resolution | Round down → tie → count brisques, round down → still tied → **hand is null and void**, no winner | Corrected from an earlier secondary-source-based draft; primary source (Law 61) is explicit: a genuine tie voids the hand, no forced tiebreak — see rules spec §5/§7 |
@@ -54,3 +54,4 @@ A single-player Rubicon Bezique card game, playable entirely in the browser with
 
 - `bezique-rules-spec.md` — full Rubicon Bezique ruleset, sourced and cross-checked, with worked examples for the trickiest mechanic (replacement re-declaration)
 - `bezique-architecture-plan.md` — layering, data model, agent interface, phased build order, multiplayer-readiness notes
+- `chinese-bezique-rules-spec.md` — second variant (2026-08-18), sourced against Pagat's "Bezique and Variations"; confirms the config-driven ruleset design worked as intended — see its §5 for exactly what did and didn't need engine changes

@@ -32,18 +32,23 @@ const REPRESENTATIVE_SUIT = 'S';
 const CLASS_DISPLAY_ORDER: Record<string, number> = { sequence: 0, bezique: 1, quartet: 2 };
 
 function formatCards(ruleset: Ruleset, kind: MeldKind): { cards: string; suitNote?: string } {
-  const def = ruleset.meldTable[kind];
+  const def = ruleset.meldTable[kind]!;
   const isSuitParameterized = def.class === 'sequence';
-  const slots = requiredSlots(ruleset, kind, isSuitParameterized ? REPRESENTATIVE_SUIT : undefined);
+  const isTrumpScoped = def.class !== 'sequence' && def.suitScope === 'trump';
+  const slots = requiredSlots(ruleset, kind, isSuitParameterized || isTrumpScoped ? REPRESENTATIVE_SUIT : undefined);
   const cards = slots.map((s) => `${s.rank}${SUIT_SYMBOL[s.suit]}`).join(' ');
   return {
     cards,
-    suitNote: isSuitParameterized ? 'shown in spades — any suit qualifies; trumps score more' : undefined,
+    suitNote: isSuitParameterized
+      ? 'shown in spades — any suit qualifies; trumps score more'
+      : isTrumpScoped
+        ? 'shown in spades — actually whichever suit is currently trump'
+        : undefined,
   };
 }
 
 function formatPoints(ruleset: Ruleset, kind: MeldKind): string {
-  const def = ruleset.meldTable[kind];
+  const def = ruleset.meldTable[kind]!;
   return def.class === 'sequence' ? `${def.trumpPoints} trump / ${def.plainPoints} plain` : `${def.points}`;
 }
 
@@ -67,8 +72,8 @@ export function buildHelpSheetContent(ruleset: Ruleset): HelpSheetContent {
       };
     })
     .sort((a, b) => {
-      const defA = ruleset.meldTable[a.kind];
-      const defB = ruleset.meldTable[b.kind];
+      const defA = ruleset.meldTable[a.kind]!;
+      const defB = ruleset.meldTable[b.kind]!;
       if (defA.class !== defB.class) return CLASS_DISPLAY_ORDER[defA.class]! - CLASS_DISPLAY_ORDER[defB.class]!;
       return defA.classRank - defB.classRank;
     });

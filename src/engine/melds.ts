@@ -36,6 +36,19 @@ export function requiredSlots(ruleset: Ruleset, kind: MeldKind, suit?: Suit): Sl
       return ruleset.suits.map((s) => ({ suit: s, rank: 'Q' as Rank }));
     case 'fourJacks':
       return ruleset.suits.map((s) => ({ suit: s, rank: 'J' as Rank }));
+    // Chinese Bezique only: four copies of the SAME card in the trump suit (`suit` here is
+    // always the current trumpSuit, passed in by the caller — never looped over all suits,
+    // unlike marriage/sequence, since there's exactly one valid trump at a time).
+    case 'fourTrumpAces':
+      return repeatSlots([{ suit: suit!, rank: 'A' }], 4);
+    case 'fourTrumpTens':
+      return repeatSlots([{ suit: suit!, rank: '10' }], 4);
+    case 'fourTrumpKings':
+      return repeatSlots([{ suit: suit!, rank: 'K' }], 4);
+    case 'fourTrumpQueens':
+      return repeatSlots([{ suit: suit!, rank: 'Q' }], 4);
+    case 'fourTrumpJacks':
+      return repeatSlots([{ suit: suit!, rank: 'J' }], 4);
   }
 }
 
@@ -90,7 +103,7 @@ export function findFreshDeclarableMelds(
   const results: DeclarableMeld[] = [];
 
   const tryKind = (kind: MeldKind, suit: Suit | undefined) => {
-    const def = ruleset.meldTable[kind];
+    const def = ruleset.meldTable[kind]!;
     const slots = requiredSlots(ruleset, kind, suit);
     const usedCardIds = new Set<string>();
     const chosen: string[] = [];
@@ -121,18 +134,22 @@ export function findFreshDeclarableMelds(
     });
   };
 
-  for (const suit of ruleset.suits) {
-    tryKind('marriage', suit);
-    tryKind('sequence', suit);
+  // Config-driven, not hardcoded per kind: any meld kind a ruleset defines gets tried
+  // automatically, dispatched by its own shape rather than which specific kind it is.
+  // Sequence-class kinds (marriage/sequence) are suit-parameterized — try every suit.
+  // Trump-scoped quartets (Chinese Bezique's fourTrumpAces etc.) resolve against
+  // whichever suit is CURRENTLY trump, and simply aren't triable before one is set.
+  // Everything else (Bezique family, plain quartets) has no suit parameter at all.
+  for (const kind of Object.keys(ruleset.meldTable) as MeldKind[]) {
+    const def = ruleset.meldTable[kind]!;
+    if (def.class === 'sequence') {
+      for (const suit of ruleset.suits) tryKind(kind, suit);
+    } else if (def.suitScope === 'trump') {
+      if (trumpSuit !== null) tryKind(kind, trumpSuit);
+    } else {
+      tryKind(kind, undefined);
+    }
   }
-  tryKind('bezique', undefined);
-  tryKind('doubleBezique', undefined);
-  tryKind('tripleBezique', undefined);
-  tryKind('quadrupleBezique', undefined);
-  tryKind('fourAces', undefined);
-  tryKind('fourKings', undefined);
-  tryKind('fourQueens', undefined);
-  tryKind('fourJacks', undefined);
 
   return results;
 }
@@ -198,7 +215,7 @@ export function findReplacementRedeclarations(
     );
     if (duplicatesAStandingMeld) continue;
 
-    const def = ruleset.meldTable[meld.kind];
+    const def = ruleset.meldTable[meld.kind]!;
     results.push({
       kind: meld.kind,
       class: meld.class,

@@ -13,10 +13,10 @@ import {
   makeDebugState,
   makeRng,
   resolveTrick,
-  rubiconBezique,
 } from '../engine/index.js';
 import type { Card, GameState, Move, PlayerId } from '../engine/types.js';
 import { AI_ID, HUMAN_ID } from './playerIds.js';
+import { VARIANTS, type VariantOption } from './variants.js';
 
 /** How long a completed trick stays visible (both cards, winner highlighted) before clearing. */
 const TRICK_PAUSE_MS = 900;
@@ -61,7 +61,8 @@ export function useGame() {
     agentsRef.current[1] = new WeightedAgent(AI_ID, aiTier);
   }, [aiTier]);
 
-  const [state, setState] = useState<GameState>(() => dealNewHand(rubiconBezique, AI_ID, makeRng(Date.now())));
+  const [variant, setVariant] = useState<VariantOption>(VARIANTS[0]!);
+  const [state, setState] = useState<GameState>(() => dealNewHand(variant.ruleset, AI_ID, makeRng(Date.now())));
   const [completedTrick, setCompletedTrick] = useState<CompletedTrick | null>(null);
 
   // Carte blanche (rules spec §3) is auto-detected and scored directly rather than modeled
@@ -78,7 +79,20 @@ export function useGame() {
     prevCarteBlancheRef.current = { 0: 0, 1: 0 };
     setState((prev) => {
       const nextDealer: PlayerId = prev.dealerId === 0 ? 1 : 0;
-      return dealNewHand(rubiconBezique, nextDealer, makeRng(Date.now()));
+      return dealNewHand(variant.ruleset, nextDealer, makeRng(Date.now()));
+    });
+  }, [variant]);
+
+  // Switching variants always starts a fresh deal under the new ruleset — a mid-hand
+  // ruleset swap doesn't mean anything (different deck size, meld table, scoring numbers).
+  const changeVariant = useCallback((next: VariantOption) => {
+    setVariant(next);
+    setCompletedTrick(null);
+    setCarteBlancheAnnouncement(null);
+    prevCarteBlancheRef.current = { 0: 0, 1: 0 };
+    setState((prev) => {
+      const nextDealer: PlayerId = prev.dealerId === 0 ? 1 : 0;
+      return dealNewHand(next.ruleset, nextDealer, makeRng(Date.now()));
     });
   }, []);
 
@@ -210,6 +224,8 @@ export function useGame() {
     legalMoves,
     submitMove,
     startNewHand,
+    variant,
+    changeVariant,
     isHumanTurn,
     completedTrick,
     aiTier,

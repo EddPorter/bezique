@@ -26,7 +26,15 @@ export type MeldKind =
   | 'fourAces'
   | 'fourKings'
   | 'fourQueens'
-  | 'fourJacks';
+  | 'fourJacks'
+  // Chinese/Six-Pack Bezique only (docs/chinese-bezique-rules-spec.md): four copies of the
+  // SAME card in whichever suit is currently trump, enabled by the 6-pack's duplicates —
+  // structurally different from the suit-per-card quartets above.
+  | 'fourTrumpAces'
+  | 'fourTrumpTens'
+  | 'fourTrumpKings'
+  | 'fourTrumpQueens'
+  | 'fourTrumpJacks';
 
 /** A meld as currently declared on the table. `cardIds` are the physical cards presently forming it. */
 export interface MeldDeclaration {
@@ -111,6 +119,10 @@ export interface FlatPointsMeldDef {
   classRank: number;
   requiredCount: number;
   points: number;
+  /** Chinese Bezique's trump quartets (fourTrumpAces etc.): the required slots resolve
+   * against whichever suit is CURRENTLY trump, not a fixed or looped-over suit. Omitted
+   * (undefined) for every ordinary suit-independent quartet/Bezique-family kind. */
+  suitScope?: 'trump';
 }
 
 export type MeldDef = SequenceMeldDef | FlatPointsMeldDef;
@@ -128,5 +140,7 @@ export interface Ruleset {
   brisqueValue: number;
   roundTo: number;
   carteBlanchePoints: number;
-  meldTable: Record<MeldKind, MeldDef>;
+  /** Partial: a ruleset only needs entries for the meld kinds it actually supports —
+   * e.g. Rubicon Bezique has no fourTrumpAces entry at all, not a disabled/zero one. */
+  meldTable: Partial<Record<MeldKind, MeldDef>>;
 }

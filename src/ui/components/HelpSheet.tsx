@@ -1,20 +1,21 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildHelpSheetContent } from '../../engine/helpSheet.js';
-import { rubiconBezique } from '../../engine/ruleset.js';
+import type { Ruleset } from '../../engine/types.js';
 
 interface HelpSheetProps {
   open: boolean;
   onClose: () => void;
+  ruleset: Ruleset;
+  variantName: string;
 }
-
-// Ruleset never changes at runtime — safe to build once at module scope.
-const content = buildHelpSheetContent(rubiconBezique);
 
 /** How close to an edge (px) counts as "there" for the scroll-fade cue below. */
 const SCROLL_EDGE_THRESHOLD = 4;
 
-export function HelpSheet({ open, onClose }: HelpSheetProps) {
+export function HelpSheet({ open, onClose, ruleset, variantName }: HelpSheetProps) {
+  // Recomputed only when the active variant actually changes, not every render.
+  const content = useMemo(() => buildHelpSheetContent(ruleset), [ruleset]);
   const tableWrapRef = useRef<HTMLDivElement>(null);
   // The meld table can be wider than the panel on narrow screens (`.help-table-wrap`
   // scrolls horizontally) — without a visible cue that's indistinguishable from the
@@ -61,7 +62,7 @@ export function HelpSheet({ open, onClose }: HelpSheetProps) {
             className="help-panel"
             role="dialog"
             aria-modal="true"
-            aria-label="Rubicon Bezique help sheet"
+            aria-label={`${variantName} help sheet`}
             initial={{ opacity: 0, scale: 0.94, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 12 }}
@@ -69,7 +70,7 @@ export function HelpSheet({ open, onClose }: HelpSheetProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="help-header">
-              <h2>Rubicon Bezique — Help Sheet</h2>
+              <h2>{variantName} — Help Sheet</h2>
               <button type="button" className="help-close" onClick={onClose} aria-label="Close help sheet">
                 ×
               </button>
