@@ -257,6 +257,35 @@ function spareForReplacementValue(state: GameState, playerId: PlayerId, card: Ca
   return best;
 }
 
+/** "Winning grants a meld window" bonus — full value when the rest of the hand actually
+ * has something worth declaring there, a reduced baseline otherwise (winning still gains
+ * the lead/tempo either way, just without a meld to cash in on). Reported by a user: the
+ * evaluator gave this bonus as a flat constant regardless of whether the hand held any
+ * melding potential at all. */
+const MELD_WINDOW_BONUS_WITH_POTENTIAL = 5;
+const MELD_WINDOW_BONUS_NO_POTENTIAL = 1;
+
+/**
+ * Whether any OTHER card in hand (aside from the one about to be played away to win this
+ * trick) holds real melding potential — either immediately declarable, genuinely building
+ * toward something, or a spare for an existing meld. Deliberately checked against the
+ * hand as it stands right now (still including the card about to leave), not a precise
+ * post-play recalculation — this only scales a small flat bonus, not a real cost/credit
+ * term, so slightly overcounting in the rare case where the departing card was itself
+ * propping up another card's speculative value is an acceptable simplification.
+ */
+function handHasMeldPotential(state: GameState, playerId: PlayerId, excludingCardId: string): boolean {
+  const player = state.players[playerId];
+  const remaining = player.hand.filter((c) => c.id !== excludingCardId);
+  if (remaining.length === 0) return false;
+  if (findFreshDeclarableMelds(state.ruleset, remaining, state.trumpSuit, state.cardMeldClassUsage).length > 0) {
+    return true;
+  }
+  return remaining.some(
+    (c) => speculativeMeldValue(state, playerId, c) > 0 || spareForReplacementValue(state, playerId, c) > 0,
+  );
+}
+
 /**
  * How much a candidate trump suit favours this hand — used only when a declareMeld move
  * would establish trumps for the rest of the hand (the first marriage/sequence declared).
@@ -369,9 +398,14 @@ export function evaluateMove(
         const captured =
           significance *
           ((isBrisqueCard(leadCard) ? state.ruleset.brisqueValue : 0) + (isBrisqueCard(card) ? state.ruleset.brisqueValue : 0));
-        // Small flat bonus for winning (gains the lead + a meld window), and a tiny
-        // preference for the cheapest winning card when several would all win.
-        trickValue = captured + 5 - rankValue(card.rank) * 0.01;
+        // Bonus for winning (gains the lead + a meld window) — scaled down when there's
+        // nothing in hand actually worth declaring in that window (see
+        // handHasMeldPotential) — plus a tiny preference for the cheapest winning card
+        // when several would all win.
+        const meldWindowBonus = handHasMeldPotential(state, playerId, card.id)
+          ? MELD_WINDOW_BONUS_WITH_POTENTIAL
+          : MELD_WINDOW_BONUS_NO_POTENTIAL;
+        trickValue = captured + meldWindowBonus - rankValue(card.rank) * 0.01;
       } else {
         // A definite loss: give up the least by discarding the card with the smallest
         // surrender cost, and among equal-cost options (typically several low, non-trump,

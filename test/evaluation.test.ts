@@ -114,6 +114,50 @@ describe('evaluateMove: playCard resolving a trick', () => {
     expect(result.trickValue).toBeCloseTo(-10.07, 2); // -10 plus a tiny rank tiebreak
   });
 
+  it('values winning a trick less when the rest of the hand has no meld potential at all (reported by a user)', () => {
+    // Same win (S9 beats a non-brisque S8 lead, no brisques involved either side), but one
+    // hand's other card (H7) has zero meld relevance while the other's (SK, alongside a
+    // held SQ) is genuinely building toward a marriage — the meld window winning grants
+    // is worth more when there's something to actually put through it.
+    const noPotential = makeState({
+      stage: 'awaitingFollow',
+      turn: 1,
+      currentTrick: { leaderId: 0, leadCard: c('S8-0', 'S', '8') },
+      players: [
+        { id: 0, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [c('S9-0', 'S', '9'), c('H7-0', 'H', '7')], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const withPotential = makeState({
+      stage: 'awaitingFollow',
+      turn: 1,
+      currentTrick: { leaderId: 0, leadCard: c('S8-0', 'S', '8') },
+      players: [
+        { id: 0, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [c('S9-0', 'S', '9'), c('SK-0', 'S', 'K'), c('SQ-0', 'S', 'Q')], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 1 as const, cardId: 'S9-0' };
+    const resultNoPotential = evaluateMove(noPotential, 1, move, UNIT_WEIGHTS);
+    const resultWithPotential = evaluateMove(withPotential, 1, move, UNIT_WEIGHTS);
+    expect(resultWithPotential.trickValue).toBeGreaterThan(resultNoPotential.trickValue);
+  });
+
+  it('still gives some win bonus with no meld potential — winning the lead has value regardless', () => {
+    const state = makeState({
+      stage: 'awaitingFollow',
+      turn: 1,
+      currentTrick: { leaderId: 0, leadCard: c('S8-0', 'S', '8') },
+      players: [
+        { id: 0, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [c('S9-0', 'S', '9')], melds: [], score: 0, carteBlanchePoints: 0 }, // only card, no other potential
+      ],
+    });
+    const move = { type: 'playCard' as const, playerId: 1 as const, cardId: 'S9-0' };
+    const result = evaluateMove(state, 1, move, UNIT_WEIGHTS);
+    expect(result.trickValue).toBeGreaterThan(0);
+  });
+
   it('losing a non-brisque card costs nothing', () => {
     const state = makeState({
       stage: 'awaitingFollow',
