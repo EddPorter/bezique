@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "optimize:expert": "vitest run --config vitest.optimize.config.ts"
   },
   "dependencies": {
     "framer-motion": "^13.1.0",
