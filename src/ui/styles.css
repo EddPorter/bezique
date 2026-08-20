@@ -531,8 +531,8 @@ button[data-recommended='true'] {
 
 .tutor-panel {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
   background: rgba(94, 200, 255, 0.15);
   border: 1px solid rgba(94, 200, 255, 0.4);
   border-radius: 8px;
@@ -542,6 +542,12 @@ button[data-recommended='true'] {
   text-align: left;
 }
 
+.tutor-panel-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
 .tutor-panel-label {
   font-weight: 700;
   text-transform: uppercase;
@@ -549,6 +555,26 @@ button[data-recommended='true'] {
   letter-spacing: 0.05em;
   color: #5ec8ff;
   flex-shrink: 0;
+}
+
+.tutor-alternatives {
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+.tutor-alternatives summary {
+  cursor: pointer;
+  color: #5ec8ff;
+  font-size: 0.72rem;
+}
+
+.tutor-alternatives ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.tutor-alternatives li {
+  margin-bottom: 0.2rem;
 }
 
 /* Carte blanche announcement */

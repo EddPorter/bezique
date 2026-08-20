@@ -59,6 +59,23 @@ describe('getTutorAdvice', () => {
     const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
     expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'S7-0' });
     expect(advice.explanation).toMatch(/only legal card/);
+    expect(advice.alternatives).toEqual([]); // nothing else to explain away
+  });
+
+  it('explains why declining to declare leaves points on the table', () => {
+    const state = makeState({
+      stage: 'awaitingMeldDecision',
+      turn: 0,
+      players: [
+        { id: 0, hand: [c('SQ-0', 'S', 'Q'), c('DJ-0', 'D', 'J')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+    expect(advice.move.type).toBe('declareMeld');
+    const passAlternative = advice.alternatives.find((a) => a.move.type === 'pass');
+    expect(passAlternative).toBeDefined();
+    expect(passAlternative!.reason).toMatch(/40 points undeclared/);
   });
 
   it('recommends winning a trick and names the captured brisque', () => {
@@ -75,6 +92,12 @@ describe('getTutorAdvice', () => {
     expect(advice.move).toEqual({ type: 'playCard', playerId: 1, cardId: 'SA-0' });
     expect(advice.explanation).toMatch(/wins the trick/);
     expect(advice.explanation).toMatch(/brisque/);
+    // The tutor should also justify the card it did NOT recommend, not just the winner.
+    const loserAlternative = advice.alternatives.find(
+      (a) => a.move.type === 'playCard' && a.move.cardId === 'H7-0',
+    );
+    expect(loserAlternative).toBeDefined();
+    expect(loserAlternative!.reason).toMatch(/loses the trick/);
   });
 
   it('recommends the card that keeps meld potential alive over one that would forfeit it', () => {
@@ -94,6 +117,11 @@ describe('getTutorAdvice', () => {
     // SK/SQ would forfeit the marriage if led away; H7 is unrelated and safe.
     expect(advice.move).toEqual({ type: 'playCard', playerId: 0, cardId: 'H7-0' });
     expect(advice.explanation).toMatch(/meld options open/);
+    for (const cardId of ['SK-0', 'SQ-0']) {
+      const alt = advice.alternatives.find((a) => a.move.type === 'playCard' && a.move.cardId === cardId);
+      expect(alt).toBeDefined();
+      expect(alt!.reason).toMatch(/meld potential/);
+    }
   });
 
   it('recommends the safe lead over an exposed brisque when there is no meld difference', () => {
