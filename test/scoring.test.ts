@@ -141,4 +141,28 @@ describe('finalizeScoring', () => {
     const state = makeScoringState({ phase: 'main' });
     expect(() => finalizeScoring(state)).toThrow();
   });
+
+  describe('brisquesAlwaysCount: true (Classic Bezique)', () => {
+    const alwaysCountRuleset = { ...rubiconBezique, brisquesAlwaysCount: true };
+
+    it('counts brisques into the score even when melds alone already decide it clearly', () => {
+      // Same shape as the "ignores brisques..." case above (winner is clear either way),
+      // but the loser's meld-only score (1080) sits just below a 100-boundary — with
+      // brisquesAlwaysCount set, the 20 brisque points must push the rounded total from
+      // 1000 up to 1100, proving they were actually added rather than ignored.
+      const state = makeScoringState({
+        ruleset: alwaysCountRuleset,
+        players: [
+          { id: 0, hand: [], melds: [], score: 1500, carteBlanchePoints: 0 },
+          { id: 1, hand: [], melds: [], score: 1080, carteBlanchePoints: 0 },
+        ],
+        tricksWon: {
+          0: [],
+          1: [c('SA-0', 'S', 'A'), c('S10-0', 'S', '10')], // 20 pts of brisques
+        },
+      });
+      const result = finalizeScoring(state).result!;
+      expect(result.roundedScores).toEqual({ 0: 1500, 1: 1100 });
+    });
+  });
 });
