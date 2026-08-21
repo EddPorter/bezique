@@ -17,6 +17,7 @@ export function makeDebugState(overrides: Partial<GameState> = {}): GameState {
       { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
     ],
     trumpSuit: null,
+    turnUpCard: null,
     phase: 'main',
     stage: 'awaitingLead',
     currentTrick: { leaderId: 0, leadCard: null },

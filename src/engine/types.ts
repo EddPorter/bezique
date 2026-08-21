@@ -76,6 +76,11 @@ export interface GameState {
   deck: Card[];
   players: [Player, Player];
   trumpSuit: Suit | null;
+  /** Classic Bezique only (trumpDetermination: 'turnedUpCard', docs/classic-bezique-rules-
+   * spec.md §1/§2): the card revealed at deal time to set trumps, sitting on the table
+   * separately from the stock. Null once no such card exists (Rubicon/Chinese Bezique) OR
+   * once it's been claimed via the dix exchange. */
+  turnUpCard: Card | null;
   phase: GamePhase;
   stage: GameStage;
   currentTrick: CurrentTrick;

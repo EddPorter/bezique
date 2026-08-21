@@ -14,6 +14,7 @@ function makeScoringState(overrides: Partial<GameState> = {}): GameState {
       { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
     ],
     trumpSuit: 'S',
+    turnUpCard: null,
     phase: 'scoring',
     stage: 'awaitingLead',
     currentTrick: { leaderId: 0, leadCard: null },

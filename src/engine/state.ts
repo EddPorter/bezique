@@ -24,11 +24,21 @@ export function dealNewHand(ruleset: Ruleset, dealerId: PlayerId, rng: Rng): Gam
     };
   }) as [Player, Player];
 
+  // Classic Bezique (docs/classic-bezique-rules-spec.md §1): the next card after both
+  // hands are dealt is turned face-up to set trumps immediately, and sits on the table
+  // separately from the stock — not drawable, not in either hand. Rubicon/Chinese Bezique
+  // leave trumps undetermined until the first marriage/sequence (state.ts's caller sees
+  // trumpSuit stay null, exactly as before this variant existed).
+  const turnUpCard = ruleset.trumpDetermination === 'turnedUpCard' ? (stock[0] ?? null) : null;
+  const trumpSuit = turnUpCard?.suit ?? null;
+  const remainingStock = turnUpCard ? stock.slice(1) : stock;
+
   return {
     ruleset,
-    deck: stock,
+    deck: remainingStock,
     players,
-    trumpSuit: null,
+    trumpSuit,
+    turnUpCard,
     phase: 'main',
     stage: 'awaitingLead',
     currentTrick: { leaderId: nonDealerId, leadCard: null },
