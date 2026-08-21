@@ -1,6 +1,7 @@
 import { animate } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { isBrisqueCard } from '../../engine/cards.js';
+import type { MatchState } from '../../engine/match.js';
 import type { GameState, PlayerId } from '../../engine/types.js';
 import { AI_ID, HUMAN_ID } from '../playerIds.js';
 
@@ -33,13 +34,15 @@ function AnimatedNumber({ value }: { value: number }) {
   return <span ref={nodeRef}>{value}</span>;
 }
 
-/** Rules spec §4/§5: brisques only ever count toward the final score to break a near-tie
- * or rescue a rubicon — shown as secondary info so it doesn't read as part of the running total. */
+/** Rules spec §4/§5: for most rulesets brisques only count toward the final score to break
+ * a near-tie or rescue a rubicon; Classic Bezique counts them every deal unconditionally
+ * (brisquesAlwaysCount) — either way this row is secondary info, not part of the running total. */
 function brisquePoints(state: GameState, playerId: PlayerId): number {
   return state.tricksWon[playerId].filter(isBrisqueCard).length * state.ruleset.brisqueValue;
 }
 
-export function ScoreBoard({ state }: { state: GameState }) {
+export function ScoreBoard({ state, match }: { state: GameState; match: MatchState | null }) {
+  const matchMode = match ? match.ruleset.matchMode : null;
   return (
     <div className="scoreboard">
       <div className="scoreboard-item">
@@ -60,6 +63,17 @@ export function ScoreBoard({ state }: { state: GameState }) {
           Brisques: <AnimatedNumber value={brisquePoints(state, AI_ID)} />
         </span>
       </div>
+      {/* Classic Bezique only (docs/classic-bezique-rules-spec.md §5): the deal scores above
+          are just this hand — the running match total across every completed deal lives here,
+          persistently visible rather than only shown on the between-deals transition screen. */}
+      {match && matchMode?.kind === 'cumulativeToTarget' && (
+        <div className="scoreboard-item">
+          <span className="scoreboard-label">Match (first to {matchMode.targetScore})</span>
+          <span className="scoreboard-value">
+            <AnimatedNumber value={match.scores[HUMAN_ID]} /> – <AnimatedNumber value={match.scores[AI_ID]} />
+          </span>
+        </div>
+      )}
       <div className="scoreboard-item">
         <span className="scoreboard-label">Trumps</span>
         <span className="scoreboard-value">{state.trumpSuit ?? '—'}</span>

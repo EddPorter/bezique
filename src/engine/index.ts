@@ -26,5 +26,6 @@ export { endgameLegalFollowCards, resolveTrick } from './trick.js';
 export { dealNewHand } from './state.js';
 export { makeDebugState } from './debugState.js';
 export { applyMove, getLegalMoves } from './moves.js';
-export { finalizeScoring } from './scoring.js';
+export { finalizeDealScore, finalizeScoring } from './scoring.js';
+export { finalizeMatchDeal, startMatch, startNextMatchDeal, type MatchState } from './match.js';
 export { buildHelpSheetContent, type HelpSheetContent, type MeldTableRow } from './helpSheet.js';

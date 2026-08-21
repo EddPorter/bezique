@@ -1,4 +1,4 @@
-import type { Card, GameState, HandResult, PlayerId } from './types.js';
+import type { Card, GameState, HandResult, Player, PlayerId } from './types.js';
 
 const other = (id: PlayerId): PlayerId => (id === 0 ? 1 : 0);
 
@@ -93,4 +93,29 @@ export function finalizeScoring(state: GameState): GameState {
   };
 
   return { ...state, phase: 'complete', result };
+}
+
+/**
+ * Classic Bezique's per-deal scoring (docs/classic-bezique-rules-spec.md §5) — deliberately
+ * NOT `finalizeScoring`'s winner/rubicon/void logic, which only makes sense when a single
+ * deal decides the whole game. A `cumulativeToTarget` deal has no winner of its own: it just
+ * folds brisques (unconditional here — brisquesAlwaysCount) into each player's own score, so
+ * `state.players[id].score` ends up as that player's complete contribution for THIS deal,
+ * ready for the match layer (src/engine/match.ts) to add to their running match total. No
+ * rounding — Classic Bezique's sources describe no such step, unlike Rubicon/Chinese.
+ */
+export function finalizeDealScore(state: GameState): GameState {
+  if (state.phase !== 'scoring') {
+    throw new Error(`finalizeDealScore called outside the scoring phase (phase=${state.phase})`);
+  }
+  if (state.ruleset.matchMode.kind !== 'cumulativeToTarget') {
+    throw new Error(`finalizeDealScore only supports matchMode 'cumulativeToTarget', got '${state.ruleset.matchMode.kind}'`);
+  }
+
+  const players = state.players.map((player): Player => ({
+    ...player,
+    score: player.score + brisqueScore(state.tricksWon[player.id], state.ruleset.brisqueValue),
+  })) as [Player, Player];
+
+  return { ...state, players, phase: 'complete' };
 }

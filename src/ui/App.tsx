@@ -4,6 +4,7 @@ import { CarteBlancheBanner } from './components/CarteBlancheBanner.js';
 import { Card, CardBack } from './components/Card.js';
 import { Hand } from './components/Hand.js';
 import { HelpSheet } from './components/HelpSheet.js';
+import { MatchDealBanner } from './components/MatchDealBanner.js';
 import { MeldChoices } from './components/MeldChoices.js';
 import { MeldDisplay } from './components/MeldDisplay.js';
 import { ResultBanner } from './components/ResultBanner.js';
@@ -36,6 +37,8 @@ export function App() {
     setInsightsEnabled,
     cardInsights,
     carteBlancheAnnouncement,
+    match,
+    startNextDeal,
   } = useGame();
   const [helpOpen, setHelpOpen] = useState(false);
   const [handSortMode, setHandSortMode] = useState<HandSortMode>('suitRank');
@@ -66,9 +69,15 @@ export function App() {
     submitMove(move);
   };
 
-  /** Shared by "New Game" and the variant switch — both discard the current hand. */
+  // A completed deal is only "safe to discard without asking" if there's nothing riding on
+  // it: either there's no match at all (Rubicon/Chinese Bezique — the deal being over IS the
+  // whole game), or the match itself has already concluded. Mid-match, a completed deal is
+  // just a transition screen with real accumulated score behind it — that's exactly the
+  // in-progress state confirmDiscardInProgress exists to protect.
+  const matchInProgress = match !== null && match.winnerId === null;
+  /** Shared by "New Game" and the variant switch — both discard the current hand/match. */
   const confirmDiscardInProgress = (message: string) =>
-    state.phase === 'complete' || window.confirm(message);
+    (!matchInProgress && state.phase === 'complete') || window.confirm(message);
 
   return (
     <main className="table">
@@ -96,7 +105,7 @@ export function App() {
       <div className="game-layout">
         <div className="main-column">
           <div className="scoreboard-mobile">
-            <ScoreBoard state={state} />
+            <ScoreBoard state={state} match={match} />
           </div>
 
           <section className="opponent-area">
@@ -170,7 +179,7 @@ export function App() {
 
         <aside className="side-panel">
           <div className="scoreboard-desktop">
-            <ScoreBoard state={state} />
+            <ScoreBoard state={state} match={match} />
           </div>
 
           <AnimatePresence>
@@ -239,7 +248,10 @@ export function App() {
             </label>
           </div>
 
-          {state.phase === 'complete' && state.result && (
+          {state.phase === 'complete' && match && (
+            <MatchDealBanner match={match} onNextDeal={startNextDeal} onNewMatch={startNewHand} />
+          )}
+          {state.phase === 'complete' && !match && state.result && (
             <ResultBanner result={state.result} onPlayAgain={startNewHand} />
           )}
         </aside>

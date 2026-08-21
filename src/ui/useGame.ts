@@ -7,14 +7,18 @@ import { CLUB_PLAYER_TIER, EXPERT_TIER, WeightedAgent, type TierConfig } from '.
 import {
   applyMove,
   dealNewHand,
-  findCard,
+  finalizeMatchDeal,
   finalizeScoring,
+  findCard,
   getLegalMoves,
   makeDebugState,
   makeRng,
   resolveTrick,
+  startMatch,
+  startNextMatchDeal,
+  type MatchState,
 } from '../engine/index.js';
-import type { Card, GameState, Move, PlayerId } from '../engine/types.js';
+import { OTHER_PLAYER, type Card, type GameState, type Move, type PlayerId } from '../engine/types.js';
 import { AI_ID, HUMAN_ID } from './playerIds.js';
 import { VARIANTS, type VariantOption } from './variants.js';
 
@@ -36,6 +40,33 @@ export interface CarteBlancheAnnouncement {
 
 /** How long a carte blanche announcement stays visible before clearing. */
 const CARTE_BLANCHE_ANNOUNCEMENT_MS = 3500;
+
+/**
+ * Which kind of "session" is running, mirroring `Ruleset.matchMode` (docs/classic-bezique-
+ * rules-spec.md §5): `singleHand` (Rubicon/Chinese Bezique) holds a bare `GameState` — each
+ * deal IS the whole game. `match` (Classic Bezique) holds a `MatchState`, whose own `.deal`
+ * is the in-progress `GameState` — there's a running score across multiple deals above it.
+ * Kept as a union (not two parallel pieces of state) so there's exactly one source of truth
+ * for "the current deal" at all times, regardless of which ruleset is active.
+ */
+type Session = { mode: 'singleHand'; state: GameState } | { mode: 'match'; match: MatchState };
+
+function startSession(ruleset: VariantOption['ruleset'], dealerId: PlayerId): Session {
+  return ruleset.matchMode.kind === 'cumulativeToTarget'
+    ? { mode: 'match', match: startMatch(ruleset, dealerId, makeRng(Date.now())) }
+    : { mode: 'singleHand', state: dealNewHand(ruleset, dealerId, makeRng(Date.now())) };
+}
+
+function currentDeal(session: Session): GameState {
+  return session.mode === 'match' ? session.match.deal : session.state;
+}
+
+/** Replaces just the in-progress deal, preserving match scores/dealer/winner untouched. */
+function withDeal(session: Session, updater: (deal: GameState) => GameState): Session {
+  return session.mode === 'match'
+    ? { ...session, match: { ...session.match, deal: updater(session.match.deal) } }
+    : { ...session, state: updater(session.state) };
+}
 
 /**
  * Drives the game loop through the same Agent interface for both players
@@ -62,7 +93,8 @@ export function useGame() {
   }, [aiTier]);
 
   const [variant, setVariant] = useState<VariantOption>(VARIANTS[0]!);
-  const [state, setState] = useState<GameState>(() => dealNewHand(variant.ruleset, AI_ID, makeRng(Date.now())));
+  const [session, setSession] = useState<Session>(() => startSession(variant.ruleset, AI_ID));
+  const state = currentDeal(session);
   const [completedTrick, setCompletedTrick] = useState<CompletedTrick | null>(null);
 
   // Carte blanche (rules spec §3) is auto-detected and scored directly rather than modeled
@@ -73,15 +105,30 @@ export function useGame() {
   const prevCarteBlancheRef = useRef<Record<PlayerId, number>>({ 0: 0, 1: 0 });
   const [carteBlancheAnnouncement, setCarteBlancheAnnouncement] = useState<CarteBlancheAnnouncement | null>(null);
 
+  /** Full reset: fresh match/game at 0-0 (or a fresh single deal), dealer alternated from
+   * whoever last dealt. Used by "New Game" and a variant switch — either discards whatever
+   * match/hand was in progress. */
   const startNewHand = useCallback(() => {
     setCompletedTrick(null);
     setCarteBlancheAnnouncement(null);
     prevCarteBlancheRef.current = { 0: 0, 1: 0 };
-    setState((prev) => {
-      const nextDealer: PlayerId = prev.dealerId === 0 ? 1 : 0;
-      return dealNewHand(variant.ruleset, nextDealer, makeRng(Date.now()));
+    setSession((prev) => {
+      const nextDealer: PlayerId = OTHER_PLAYER[currentDeal(prev).dealerId];
+      return startSession(variant.ruleset, nextDealer);
     });
   }, [variant]);
+
+  /** Classic Bezique only: deals the next hand of an ONGOING match, carrying the running
+   * score forward — distinct from startNewHand, which resets the score to 0-0. A no-op if
+   * called outside match mode or after the match already has a winner. */
+  const startNextDeal = useCallback(() => {
+    setCompletedTrick(null);
+    setCarteBlancheAnnouncement(null);
+    prevCarteBlancheRef.current = { 0: 0, 1: 0 };
+    setSession((prev) =>
+      prev.mode === 'match' ? { mode: 'match', match: startNextMatchDeal(prev.match, makeRng(Date.now())) } : prev,
+    );
+  }, []);
 
   // Switching variants always starts a fresh deal under the new ruleset — a mid-hand
   // ruleset swap doesn't mean anything (different deck size, meld table, scoring numbers).
@@ -90,9 +137,9 @@ export function useGame() {
     setCompletedTrick(null);
     setCarteBlancheAnnouncement(null);
     prevCarteBlancheRef.current = { 0: 0, 1: 0 };
-    setState((prev) => {
-      const nextDealer: PlayerId = prev.dealerId === 0 ? 1 : 0;
-      return dealNewHand(next.ruleset, nextDealer, makeRng(Date.now()));
+    setSession((prev) => {
+      const nextDealer: PlayerId = OTHER_PLAYER[currentDeal(prev).dealerId];
+      return startSession(next.ruleset, nextDealer);
     });
   }, []);
 
@@ -120,8 +167,9 @@ export function useGame() {
   // is plain, serializable data (no class instances, no functions), so getState()'s result
   // round-trips through JSON.stringify/parse cleanly, and setState() jumps the running game
   // straight to whatever was passed in — the game loop effect below picks it up on the next
-  // render exactly as if it had been reached by play. Stripped from production builds since
-  // `import.meta.env.DEV` is statically false there.
+  // render exactly as if it had been reached by play. In match mode, setState only replaces
+  // the in-progress deal; match.scores/dealerId/winnerId are left as they were. Stripped from
+  // production builds since `import.meta.env.DEV` is statically false there.
   //
   // Example (browser console): window.__bezique.setState(window.__bezique.makeDebugState({
   //   turn: window.__bezique.HUMAN_ID,
@@ -135,7 +183,7 @@ export function useGame() {
     if (!import.meta.env.DEV) return;
     (window as unknown as { __bezique: unknown }).__bezique = {
       getState: () => state,
-      setState,
+      setState: (next: GameState) => setSession((prev) => withDeal(prev, () => next)),
       makeDebugState,
       HUMAN_ID,
       AI_ID,
@@ -144,7 +192,12 @@ export function useGame() {
 
   useEffect(() => {
     if (state.phase === 'scoring') {
-      setState((current) => (current === state ? finalizeScoring(current) : current));
+      setSession((prev) => {
+        if (currentDeal(prev) !== state) return prev;
+        return prev.mode === 'match'
+          ? { mode: 'match', match: finalizeMatchDeal(prev.match) }
+          : { mode: 'singleHand', state: finalizeScoring(prev.state) };
+      });
       return;
     }
     if (state.phase === 'complete') return;
@@ -167,12 +220,12 @@ export function useGame() {
         pauseTimer = setTimeout(() => {
           if (cancelled) return;
           setCompletedTrick(null);
-          setState((current) => (current === state ? applyMove(current, move) : current));
+          setSession((prev) => withDeal(prev, (current) => (current === state ? applyMove(current, move) : current)));
         }, TRICK_PAUSE_MS);
         return;
       }
 
-      setState((current) => (current === state ? applyMove(current, move) : current));
+      setSession((prev) => withDeal(prev, (current) => (current === state ? applyMove(current, move) : current)));
     });
 
     return () => {
@@ -237,5 +290,9 @@ export function useGame() {
     setInsightsEnabled,
     cardInsights,
     carteBlancheAnnouncement,
+    // Classic Bezique only (docs/classic-bezique-rules-spec.md §5): null for
+    // singleHandComplete rulesets, where a deal IS the whole game.
+    match: session.mode === 'match' ? session.match : null,
+    startNextDeal,
   };
 }
