@@ -13,12 +13,14 @@ describe('buildHelpSheetContent', () => {
   });
 
   it('mirrors the scoring constants from the ruleset exactly', () => {
-    expect(content.rubiconThreshold).toBe(rubiconBezique.rubiconThreshold);
-    expect(content.gameBonus).toBe(rubiconBezique.gameBonus);
-    expect(content.rubiconBonus).toBe(rubiconBezique.rubiconBonus);
+    const matchMode = rubiconBezique.matchMode;
+    if (matchMode.kind !== 'singleHandComplete') throw new Error('expected singleHandComplete');
+    expect(content.rubiconThreshold).toBe(matchMode.rubiconThreshold);
+    expect(content.gameBonus).toBe(matchMode.gameBonus);
+    expect(content.rubiconBonus).toBe(matchMode.rubiconBonus);
     expect(content.lastTrickBonus).toBe(rubiconBezique.lastTrickBonus);
     expect(content.brisqueValue).toBe(rubiconBezique.brisqueValue);
-    expect(content.roundTo).toBe(rubiconBezique.roundTo);
+    expect(content.roundTo).toBe(matchMode.roundTo);
     expect(content.carteBlanchePoints).toBe(rubiconBezique.carteBlanchePoints);
   });
 
@@ -76,7 +78,9 @@ describe('buildHelpSheetContent', () => {
   });
 
   it('stays in sync if the ruleset changes (no hard-coded duplicate values)', () => {
-    const tweaked = { ...rubiconBezique, rubiconThreshold: 2000, gameBonus: 999 };
+    const matchMode = rubiconBezique.matchMode;
+    if (matchMode.kind !== 'singleHandComplete') throw new Error('expected singleHandComplete');
+    const tweaked = { ...rubiconBezique, matchMode: { ...matchMode, rubiconThreshold: 2000, gameBonus: 999 } };
     const tweakedContent = buildHelpSheetContent(tweaked);
     expect(tweakedContent.rubiconThreshold).toBe(2000);
     expect(tweakedContent.gameBonus).toBe(999);

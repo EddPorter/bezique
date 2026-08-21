@@ -127,19 +127,54 @@ export interface FlatPointsMeldDef {
 
 export type MeldDef = SequenceMeldDef | FlatPointsMeldDef;
 
+/** Rubicon/Chinese Bezique: trumps are undetermined until the first marriage/sequence is
+ * declared. Classic Bezique (docs/classic-bezique-rules-spec.md §1): a card is turned up
+ * at the deal and sets trumps immediately. */
+export type TrumpDetermination = 'firstMarriageOrSequence' | 'turnedUpCard';
+
+/**
+ * How a match ends. `singleHandComplete` (Rubicon/Chinese Bezique): each deal IS the whole
+ * game, decided by the rounding/rubicon formula below. `cumulativeToTarget` (Classic
+ * Bezique, docs/classic-bezique-rules-spec.md §5): a running match across MULTIPLE deals,
+ * first to `targetScore` wins — a structurally different shape, not just different
+ * numbers, which is why this is a discriminated union rather than one flat set of fields.
+ */
+export type MatchMode =
+  | {
+      kind: 'singleHandComplete';
+      rubiconThreshold: number;
+      gameBonus: number;
+      /** Flat bonus added on top of both rounded scores when the loser is rubiconed (Laws 58-59): the 1,000-pt rubicon bonus plus a fixed 300 standing in for the winner's assumed brisques. */
+      rubiconBonus: number;
+      roundTo: number;
+    }
+  | {
+      kind: 'cumulativeToTarget';
+      targetScore: number;
+    };
+
 export interface Ruleset {
   deckCopies: number;
   cardsPerPlayer: number;
   ranks: readonly Rank[];
   suits: readonly Suit[];
-  rubiconThreshold: number;
-  gameBonus: number;
-  /** Flat bonus added on top of both rounded scores when the loser is rubiconed (Laws 58-59): the 1,000-pt rubicon bonus plus a fixed 300 standing in for the winner's assumed brisques. */
-  rubiconBonus: number;
   lastTrickBonus: number;
   brisqueValue: number;
-  roundTo: number;
   carteBlanchePoints: number;
+  trumpDetermination: TrumpDetermination;
+  /** Rubicon/Chinese Bezique endgame: must follow suit AND must win if able. Classic
+   * Bezique (docs/classic-bezique-rules-spec.md §4, Whist-style): follow suit if able,
+   * may trump if unable to follow suit, but no forced win — a real, sourced difference,
+   * not an oversight. */
+  endgameMustWinIfAble: boolean;
+  /** Rubicon/Chinese Bezique: brisques only count toward the final score to break a
+   * near-tie or rescue a rubicon. Classic Bezique: brisques count unconditionally, every
+   * deal (docs/classic-bezique-rules-spec.md §5). */
+  brisquesAlwaysCount: boolean;
+  /** The dix (7 of trumps) special value (docs/classic-bezique-rules-spec.md §2).
+   * Undefined means no such mechanic exists — Rubicon/Chinese Bezique explicitly have none. */
+  dix?: { points: number };
+  matchMode: MatchMode;
   /** Partial: a ruleset only needs entries for the meld kinds it actually supports —
    * e.g. Rubicon Bezique has no fourTrumpAces entry at all, not a disabled/zero one. */
   meldTable: Partial<Record<MeldKind, MeldDef>>;

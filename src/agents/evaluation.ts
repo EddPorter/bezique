@@ -55,11 +55,13 @@ function trumpConservationValue(hand: Card[], trumpSuit: Suit | null): number {
 /**
  * How much brisques currently matter. Per the rules (spec §5.4) they only ever count
  * toward the final score to break a near-tie or rescue a rubicon — melds dominate normal
- * scoring. Scales every brisque-specific term (not the flat trick-win bonus, and not trump
- * conservation, which matters independently) so the model doesn't chase brisques when the
- * meld score already decides the hand comfortably. "Near-rubicon" only fires late in the
- * hand — being under the threshold early on doesn't mean much when scores are still
- * growing turn by turn.
+ * scoring — UNLESS the ruleset says brisques always count (Classic Bezique,
+ * docs/classic-bezique-rules-spec.md §5), in which case they matter at full significance
+ * unconditionally, every deal. Scales every brisque-specific term (not the flat trick-win
+ * bonus, and not trump conservation, which matters independently) so the model doesn't
+ * chase brisques when the meld score already decides the hand comfortably. "Near-rubicon"
+ * only fires late in the hand — being under the threshold early on doesn't mean much when
+ * scores are still growing turn by turn.
  */
 const BRISQUE_BASELINE_SIGNIFICANCE = 0.25;
 const BRISQUE_MARGIN_SIGNIFICANCE = 1;
@@ -67,15 +69,22 @@ const TIE_MARGIN_BUCKETS = 2;
 const LATE_HAND_STOCK_THRESHOLD = 20;
 
 function brisqueSignificance(state: GameState, playerId: PlayerId): number {
+  if (state.ruleset.brisquesAlwaysCount) return BRISQUE_MARGIN_SIGNIFICANCE;
+
+  const matchMode = state.ruleset.matchMode;
+  // Only 'singleHandComplete' rulesets have a rubicon/round-to concept to compare against;
+  // brisquesAlwaysCount already handled the alternative above, so this is always true here
+  // in practice, but the narrowing keeps this function honest about what it depends on.
+  if (matchMode.kind !== 'singleHandComplete') return BRISQUE_BASELINE_SIGNIFICANCE;
+
   const opponentId = other(playerId);
-  const roundTo = state.ruleset.roundTo;
   const myScore = state.players[playerId].score;
   const oppScore = state.players[opponentId].score;
 
-  const nearTie = Math.abs(myScore - oppScore) < roundTo * TIE_MARGIN_BUCKETS;
+  const nearTie = Math.abs(myScore - oppScore) < matchMode.roundTo * TIE_MARGIN_BUCKETS;
 
   const lateInHand = state.phase === 'endgame' || state.deck.length <= LATE_HAND_STOCK_THRESHOLD;
-  const rubiconRisk = lateInHand && (myScore < state.ruleset.rubiconThreshold || oppScore < state.ruleset.rubiconThreshold);
+  const rubiconRisk = lateInHand && (myScore < matchMode.rubiconThreshold || oppScore < matchMode.rubiconThreshold);
 
   return nearTie || rubiconRisk ? BRISQUE_MARGIN_SIGNIFICANCE : BRISQUE_BASELINE_SIGNIFICANCE;
 }

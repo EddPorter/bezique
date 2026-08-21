@@ -17,12 +17,17 @@ export interface HelpSheetContent {
   cardsPerPlayer: number;
   rankOrderHighToLow: string;
   meldTable: MeldTableRow[];
-  rubiconThreshold: number;
-  gameBonus: number;
-  rubiconBonus: number;
+  /** Present only for matchMode.kind === 'singleHandComplete' rulesets (Rubicon/Chinese
+   * Bezique) — each deal decides a winner via the rounding/rubicon formula. */
+  rubiconThreshold?: number;
+  gameBonus?: number;
+  rubiconBonus?: number;
+  roundTo?: number;
+  /** Present only for matchMode.kind === 'cumulativeToTarget' rulesets (Classic Bezique)
+   * — deals accumulate raw points toward this target across a running match. */
+  matchTargetScore?: number;
   lastTrickBonus: number;
   brisqueValue: number;
-  roundTo: number;
   carteBlanchePoints: number;
 }
 
@@ -78,18 +83,24 @@ export function buildHelpSheetContent(ruleset: Ruleset): HelpSheetContent {
       return defA.classRank - defB.classRank;
     });
 
+  const matchMode = ruleset.matchMode;
+
   return {
     totalCards: ruleset.deckCopies * ruleset.suits.length * ruleset.ranks.length,
     deckCopies: ruleset.deckCopies,
     cardsPerPlayer: ruleset.cardsPerPlayer,
     rankOrderHighToLow: ruleset.ranks.join(' > '),
     meldTable,
-    rubiconThreshold: ruleset.rubiconThreshold,
-    gameBonus: ruleset.gameBonus,
-    rubiconBonus: ruleset.rubiconBonus,
+    ...(matchMode.kind === 'singleHandComplete'
+      ? {
+          rubiconThreshold: matchMode.rubiconThreshold,
+          gameBonus: matchMode.gameBonus,
+          rubiconBonus: matchMode.rubiconBonus,
+          roundTo: matchMode.roundTo,
+        }
+      : { matchTargetScore: matchMode.targetScore }),
     lastTrickBonus: ruleset.lastTrickBonus,
     brisqueValue: ruleset.brisqueValue,
-    roundTo: ruleset.roundTo,
     carteBlanchePoints: ruleset.carteBlanchePoints,
   };
 }

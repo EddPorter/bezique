@@ -135,22 +135,33 @@ export function HelpSheet({ open, onClose, ruleset, variantName }: HelpSheetProp
               <h3>Endgame</h3>
               <p>
                 Once the stock runs out, melded cards return to hand and no further melds may be declared. For
-                the remaining tricks you must follow suit if able, and must win the trick if able. Winning the
-                last trick scores {content.lastTrickBonus} points. Every Ace or 10 you've captured in tricks is
-                worth {content.brisqueValue} points as a brisque — but brisques only count toward your total to
-                break a near-tie, or to save you from a rubicon.
+                the remaining tricks you must follow suit if able
+                {ruleset.endgameMustWinIfAble ? ', and must win the trick if able' : ' — you may trump if unable to follow suit, but are not forced to win'}
+                . Winning the last trick scores {content.lastTrickBonus} points. Every Ace or 10 you've captured in
+                tricks is worth {content.brisqueValue} points as a brisque
+                {ruleset.brisquesAlwaysCount
+                  ? ', added to your total every deal'
+                  : " — but brisques only count toward your total to break a near-tie, or to save you from a rubicon"}
+                .
               </p>
             </section>
 
             <section>
               <h3>Scoring</h3>
-              <p>
-                Round your meld total down to the nearest {content.roundTo}. The higher score wins and scores
-                the difference plus a {content.gameBonus}-point game bonus. If the loser's rounded score is
-                below {content.rubiconThreshold}, they're <strong>rubiconed</strong> — the winner's score
-                instead becomes both rounded totals added together, plus {content.rubiconBonus}. If the two
-                totals are still exactly equal even after brisques, the hand is null and void.
-              </p>
+              {ruleset.matchMode.kind === 'singleHandComplete' ? (
+                <p>
+                  Round your meld total down to the nearest {content.roundTo}. The higher score wins and scores
+                  the difference plus a {content.gameBonus}-point game bonus. If the loser's rounded score is
+                  below {content.rubiconThreshold}, they're <strong>rubiconed</strong> — the winner's score
+                  instead becomes both rounded totals added together, plus {content.rubiconBonus}. If the two
+                  totals are still exactly equal even after brisques, the hand is null and void.
+                </p>
+              ) : (
+                <p>
+                  This is a running match across multiple deals — your points from each deal add to a match
+                  total. First to {content.matchTargetScore} points wins the match.
+                </p>
+              )}
             </section>
           </motion.div>
         </motion.div>
