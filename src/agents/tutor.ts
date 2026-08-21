@@ -96,6 +96,13 @@ function explainTopMove(state: GameState, playerId: PlayerId, top: ScoredMove, r
     return `Declare ${label} — worth ${Math.round(breakdown.meldProgress)} points.`;
   }
 
+  if (move.type === 'declareDix') {
+    const exchanging = state.turnUpCard !== null;
+    return exchanging
+      ? `Declare the dix and exchange it for the turn-up card — worth ${Math.round(breakdown.meldProgress)} points.`
+      : `Declare the dix — worth ${Math.round(breakdown.meldProgress)} points.`;
+  }
+
   if (move.type === 'pass') {
     return 'Nothing worth declaring here — pass and keep your hand intact.';
   }
@@ -163,6 +170,13 @@ function explainWhyWorse(state: GameState, playerId: PlayerId, top: ScoredMove, 
     const label = MELD_KIND_LABELS[move.meldKind];
     return {
       label,
+      reason: `worth less — ${Math.round(breakdown.meldProgress)} points instead of ${Math.round(top.breakdown.meldProgress)}`,
+    };
+  }
+
+  if (move.type === 'declareDix') {
+    return {
+      label: 'The dix',
       reason: `worth less — ${Math.round(breakdown.meldProgress)} points instead of ${Math.round(top.breakdown.meldProgress)}`,
     };
   }

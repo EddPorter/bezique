@@ -388,6 +388,13 @@ export function evaluateMove(
     }
     // Declaring reveals cards to the opponent — bigger melds give away more.
     informationGivenAway = -Math.min(points * 0.05, 5);
+  } else if (move.type === 'declareDix') {
+    // Classic Bezique only (docs/classic-bezique-rules-spec.md §2) — priced like a small,
+    // guaranteed meld: always worth the flat dix points, with a small information cost for
+    // revealing it (mirroring declareMeld's treatment just above).
+    const points = state.ruleset.dix?.points ?? 0;
+    meldProgress = points;
+    informationGivenAway = -Math.min(points * 0.05, 5);
   } else if (move.type === 'pass') {
     const options = findAllDeclarableMelds(state.ruleset, hand, player.melds, state.trumpSuit, state.cardMeldClassUsage);
     const best = options.length > 0 ? Math.max(...options.map((o) => o.points)) : 0;

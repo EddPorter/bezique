@@ -21,6 +21,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     currentTrick: { leaderId: 0, leadCard: null },
     tricksWon: { 0: [], 1: [] },
     cardMeldClassUsage: {},
+    dixScoredCardIds: {},
     turn: 0,
     dealerId: 1,
     lastTrickWinnerId: null,

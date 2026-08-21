@@ -33,10 +33,22 @@ export function dealNewHand(ruleset: Ruleset, dealerId: PlayerId, rng: Rng): Gam
   const trumpSuit = turnUpCard?.suit ?? null;
   const remainingStock = turnUpCard ? stock.slice(1) : stock;
 
+  // Classic Bezique (docs/classic-bezique-rules-spec.md §1/§2): if the turned-up trump card
+  // is itself the dix (a 7), the dealer scores its points immediately at the deal — a
+  // separate, one-time event from the in-hand dix declaration mechanic, and independent of
+  // it (the card stays available on the table for the eventual exchange either way).
+  const dealtPlayers: [Player, Player] =
+    ruleset.dix && turnUpCard?.rank === '7'
+      ? (players.map((p) => (p.id === dealerId ? { ...p, score: p.score + ruleset.dix!.points } : p)) as [
+          Player,
+          Player,
+        ])
+      : players;
+
   return {
     ruleset,
     deck: remainingStock,
-    players,
+    players: dealtPlayers,
     trumpSuit,
     turnUpCard,
     phase: 'main',
@@ -44,6 +56,7 @@ export function dealNewHand(ruleset: Ruleset, dealerId: PlayerId, rng: Rng): Gam
     currentTrick: { leaderId: nonDealerId, leadCard: null },
     tricksWon: { 0: [], 1: [] },
     cardMeldClassUsage: {},
+    dixScoredCardIds: {},
     turn: nonDealerId,
     dealerId,
     lastTrickWinnerId: null,

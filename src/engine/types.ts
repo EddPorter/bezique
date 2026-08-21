@@ -69,7 +69,11 @@ export interface CurrentTrick {
 export type Move =
   | { type: 'playCard'; playerId: PlayerId; cardId: string }
   | { type: 'declareMeld'; playerId: PlayerId; meldKind: MeldKind; cardIds: string[] }
-  | { type: 'pass'; playerId: PlayerId };
+  | { type: 'pass'; playerId: PlayerId }
+  /** Classic Bezique only (docs/classic-bezique-rules-spec.md §2): declare a held dix (7 of
+   * trumps) during the same post-trick-win window as a meld. If the turn-up card hasn't
+   * been claimed yet, this also exchanges it into the declarer's hand. */
+  | { type: 'declareDix'; playerId: PlayerId; cardId: string };
 
 export interface GameState {
   ruleset: Ruleset;
@@ -93,6 +97,11 @@ export interface GameState {
    * inferior one.
    */
   cardMeldClassUsage: Record<string, Partial<Record<MeldClass, number>>>;
+  /** Classic Bezique only (docs/classic-bezique-rules-spec.md §2): physical dix (7 of
+   * trumps) card ids that have already scored their one-time dix bonus, so a card can't be
+   * declared twice — including a card that entered a hand via the exchange itself, which
+   * must not be re-declarable even though it's "fresh" to that hand. */
+  dixScoredCardIds: Record<string, true>;
   turn: PlayerId;
   dealerId: PlayerId;
   lastTrickWinnerId: PlayerId | null;

@@ -49,7 +49,12 @@ export function getLegalMoves(state: GameState, playerId: PlayerId): Move[] {
       meldKind: o.kind,
       cardIds: o.cardIds,
     }));
-    return [...declareMoves, { type: 'pass', playerId }];
+    const dixMoves: Move[] = state.ruleset.dix
+      ? player.hand
+          .filter((c) => c.suit === state.trumpSuit && c.rank === '7' && !state.dixScoredCardIds[c.id])
+          .map((c) => ({ type: 'declareDix', playerId, cardId: c.id }))
+      : [];
+    return [...declareMoves, ...dixMoves, { type: 'pass', playerId }];
   }
 
   return [];
@@ -205,6 +210,35 @@ function applyDeclareMeld(state: GameState, playerId: PlayerId, move: Extract<Mo
   return afterMeldWindow(next, playerId);
 }
 
+/**
+ * Classic Bezique only (docs/classic-bezique-rules-spec.md §2): the declaring player always
+ * scores `ruleset.dix.points`. If the turn-up card hasn't been claimed yet, this also
+ * exchanges it into the declarer's hand in place of the declared dix; otherwise the
+ * declared card simply stays in hand as an ordinary card from here on.
+ */
+function applyDeclareDix(state: GameState, playerId: PlayerId, cardId: string): GameState {
+  const dix = state.ruleset.dix!;
+  const player = getPlayer(state, playerId);
+
+  const dixScoredCardIds = { ...state.dixScoredCardIds, [cardId]: true as const };
+  let turnUpCard = state.turnUpCard;
+  let hand = player.hand;
+
+  if (turnUpCard !== null) {
+    // Exchange: the declared dix leaves the hand for good; the turn-up card takes its place.
+    // If the turn-up card is itself a dix (rare — it already scored the dealer's deal-time
+    // bonus in state.ts), mark it scored too so it can't be re-declared after entering a hand.
+    hand = [...removeCard(hand, cardId), turnUpCard];
+    if (turnUpCard.rank === '7') dixScoredCardIds[turnUpCard.id] = true;
+    turnUpCard = null;
+  }
+
+  const updatedPlayer: Player = { ...player, hand, score: player.score + dix.points };
+  let next = withPlayer(state, playerId, updatedPlayer);
+  next = { ...next, turnUpCard, dixScoredCardIds };
+  return afterMeldWindow(next, playerId);
+}
+
 export function applyMove(state: GameState, move: Move): GameState {
   if (!isLegal(state, move)) {
     throw new Error(`Illegal move: ${JSON.stringify(move)}`);
@@ -217,6 +251,8 @@ export function applyMove(state: GameState, move: Move): GameState {
       return applyPlayCard(base, move.playerId, move.cardId);
     case 'declareMeld':
       return applyDeclareMeld(base, move.playerId, move);
+    case 'declareDix':
+      return applyDeclareDix(base, move.playerId, move.cardId);
     case 'pass':
       return afterMeldWindow(base, move.playerId);
   }
