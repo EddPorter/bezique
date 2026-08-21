@@ -30,7 +30,7 @@ export function getLegalMoves(state: GameState, playerId: PlayerId): Move[] {
     if (!leadCard) return [];
     const legalCards =
       state.phase === 'endgame'
-        ? endgameLegalFollowCards(player.hand, leadCard, state.trumpSuit)
+        ? endgameLegalFollowCards(player.hand, leadCard, state.trumpSuit, state.ruleset.endgameMustWinIfAble)
         : player.hand;
     return legalCards.map((card) => ({ type: 'playCard', playerId, cardId: card.id }));
   }
