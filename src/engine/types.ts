@@ -126,6 +126,12 @@ export interface SequenceMeldDef {
   requiredCount: number;
   trumpPoints: number;
   plainPoints: number;
+  /** Classic Bezique only (docs/classic-bezique-rules-spec.md §6): the Sequence exists ONLY
+   * in the trump suit — there is no plain-suit version at all, unlike Rubicon/Chinese
+   * Bezique's 150-point plain option. When true, findFreshDeclarableMelds skips every
+   * non-trump suit entirely, so `plainPoints` is simply never read (still required on the
+   * type rather than made conditional on this flag, for one unused field's sake). */
+  trumpOnly?: boolean;
 }
 
 export interface FlatPointsMeldDef {

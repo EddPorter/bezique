@@ -81,7 +81,16 @@ export function HelpSheet({ open, onClose, ruleset, variantName }: HelpSheetProp
               <p>
                 {content.deckCopies} combined 32-card packs — {content.totalCards} cards total. Each player is
                 dealt {content.cardsPerPlayer}. Rank, high to low: {content.rankOrderHighToLow}.
+                {content.hasTurnUpCard && ' The next card is turned face-up to set trumps immediately.'}
               </p>
+              {content.dixPoints !== undefined && (
+                <p className="help-note">
+                  The dix (7 of trumps) scores {content.dixPoints} points — if you hold it, declare it after
+                  winning a trick to score, exchanging it for the turn-up card if that card hasn't already been
+                  claimed. A second, duplicate 7 of trumps scores the same {content.dixPoints} points but carries
+                  no exchange privilege once the turn-up card is gone.
+                </p>
+              )}
             </section>
 
             <section>
@@ -125,10 +134,12 @@ export function HelpSheet({ open, onClose, ruleset, variantName }: HelpSheetProp
                 Once a card from a declared meld has been played to a trick, that combination can be
                 reconstructed — using a spare card borrowed from another standing meld — and scored again.
               </p>
-              <p className="help-note">
-                Carte blanche (dealt a hand with no J/Q/K/A at all) scores {content.carteBlanchePoints} points,
-                re-declarable each time a fresh card is drawn without breaking the condition.
-              </p>
+              {content.carteBlanchePoints > 0 && (
+                <p className="help-note">
+                  Carte blanche (dealt a hand with no J/Q/K/A at all) scores {content.carteBlanchePoints} points,
+                  re-declarable each time a fresh card is drawn without breaking the condition.
+                </p>
+              )}
             </section>
 
             <section>

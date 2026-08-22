@@ -74,11 +74,26 @@ function isLegal(state: GameState, move: Move): boolean {
   return legalMoves.some((m) => JSON.stringify(m) === JSON.stringify(move));
 }
 
-/** Draws for winner then loser (per rules spec §2.5), awarding carte blanche re-declarations as it goes. */
+/**
+ * Draws for winner then loser (per rules spec §2.5), awarding carte blanche re-declarations
+ * as it goes. Rubicon/Chinese Bezique's stock always has an even number of drawable cards
+ * left when it runs out, so this never mattered before — Classic Bezique's turned-up trump
+ * card (docs/classic-bezique-rules-spec.md §1) consumes one extra card off the top, which
+ * can leave an ODD count. Directly sourced, not guessed: Hoyle's Games Modernized, "THE LAWS
+ * OF RUBICON BÉZIQUE" (Drawing), Law 32 — "If there be an odd number of cards in the stock,
+ * the last card is not drawn." Same source, same physical draw mechanic as Classic Bezique's
+ * own (winner-then-loser, one card each), so it applies here too. This also preserves the
+ * invariant every other part of the engine relies on — both hands stay the SAME size for as
+ * long as the stock lasts, so the endgame's forced final tricks (§4) exhaust both hands
+ * simultaneously; giving the odd card to the winner alone would permanently unbalance hand
+ * sizes and stall the engine once the shorter hand runs out mid-endgame while still nominally
+ * owed a turn.
+ */
 function drawStockForBothPlayers(state: GameState, winnerId: PlayerId): GameState {
+  if (state.deck.length < 2) return { ...state, deck: [] };
+
   let next = state;
   for (const id of [winnerId, other(winnerId)] as PlayerId[]) {
-    if (next.deck.length === 0) continue;
     const [drawnCard, ...remaining] = next.deck;
     const player = getPlayer(next, id);
     const newHand = [...player.hand, drawnCard!];

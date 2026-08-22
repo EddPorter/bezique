@@ -143,7 +143,12 @@ export function findFreshDeclarableMelds(
   for (const kind of Object.keys(ruleset.meldTable) as MeldKind[]) {
     const def = ruleset.meldTable[kind]!;
     if (def.class === 'sequence') {
-      for (const suit of ruleset.suits) tryKind(kind, suit);
+      // Classic Bezique (docs/classic-bezique-rules-spec.md §6): trumpOnly means there's no
+      // plain-suit Sequence at all, so non-trump suits aren't even tried as candidates.
+      for (const suit of ruleset.suits) {
+        if (def.trumpOnly && suit !== trumpSuit) continue;
+        tryKind(kind, suit);
+      }
     } else if (def.suitScope === 'trump') {
       if (trumpSuit !== null) tryKind(kind, trumpSuit);
     } else {

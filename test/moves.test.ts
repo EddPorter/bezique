@@ -246,6 +246,36 @@ describe('applyMove: a full trick with meld window and draw', () => {
   });
 });
 
+describe('applyMove: odd-length stock (a bug found via Classic Bezique)', () => {
+  it('leaves a lone undrawable stock card unclaimed rather than giving it to only the trick winner', () => {
+    // Only 1 card in stock — not enough for both winner and loser to draw. Hoyle's Games
+    // Modernized, Rubicon Bézique Law 32: "If there be an odd number of cards in the stock,
+    // the last card is not drawn." Giving it to the winner alone instead would permanently
+    // unbalance hand sizes (8 vs 7) for the rest of the deal, eventually stalling the engine
+    // once the shorter hand runs out mid-endgame while still nominally owed a turn — this
+    // exact bug surfaced when Classic Bezique's turned-up trump card left an odd-length stock
+    // (docs/classic-bezique-rules-spec.md §1), a case none of the other rulesets' even stock
+    // counts ever exercised.
+    let state = makeState({
+      deck: [c('SA-1', 'S', 'A')],
+      players: [
+        { id: 0, hand: [c('SA-0', 'S', 'A'), c('H9-0', 'H', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [c('S7-0', 'S', '7'), c('H8-0', 'H', '8')], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+      turn: 0,
+    });
+
+    state = applyMove(state, { type: 'playCard', playerId: 0, cardId: 'SA-0' }); // 0 leads
+    state = applyMove(state, { type: 'playCard', playerId: 1, cardId: 'S7-0' }); // 1 follows, loses -> 0 wins
+    state = applyMove(state, { type: 'pass', playerId: 0 }); // nothing to declare, draw happens here
+
+    expect(state.deck).toHaveLength(0); // the lone card is dropped, not drawn by anyone
+    expect(state.players[0].hand).toHaveLength(1); // both hands stay the SAME size — neither drew
+    expect(state.players[1].hand).toHaveLength(1);
+    expect(state.phase).toBe('endgame');
+  });
+});
+
 describe('applyMove: endgame into scoring', () => {
   it('awards the last-trick bonus and moves to the scoring phase once both hands are empty', () => {
     let state = makeState({

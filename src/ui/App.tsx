@@ -123,6 +123,12 @@ export function App() {
           </section>
 
           <section className="middle-area">
+            {state.turnUpCard && (
+              <div className="turn-up-card">
+                <span className="turn-up-card-label">Turn-up</span>
+                <Card card={state.turnUpCard} />
+              </div>
+            )}
             <Trick trick={state.currentTrick} completedTrick={completedTrick} humanId={HUMAN_ID} />
             <AnimatePresence>
               {opponentThinking && (
@@ -142,7 +148,12 @@ export function App() {
               )}
             </AnimatePresence>
             {isHumanTurn && state.stage === 'awaitingMeldDecision' && (
-              <MeldChoices legalMoves={legalMoves} onChoose={handleMeldChoice} recommendedMove={tutorAdvice?.move} />
+              <MeldChoices
+                legalMoves={legalMoves}
+                onChoose={handleMeldChoice}
+                recommendedMove={tutorAdvice?.move}
+                turnUpCard={state.turnUpCard}
+              />
             )}
             <AnimatePresence>{tutorAdvice && <TutorPanel advice={tutorAdvice} />}</AnimatePresence>
           </section>

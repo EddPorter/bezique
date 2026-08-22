@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { classicBezique } from '../src/engine/classicBezique.js';
 import { buildHelpSheetContent } from '../src/engine/helpSheet.js';
 import { rubiconBezique } from '../src/engine/ruleset.js';
 
@@ -10,6 +11,11 @@ describe('buildHelpSheetContent', () => {
     expect(content.deckCopies).toBe(4);
     expect(content.cardsPerPlayer).toBe(9);
     expect(content.rankOrderHighToLow).toBe('A > 10 > K > Q > J > 9 > 8 > 7');
+  });
+
+  it('has no turn-up card or dix for rulesets that don\'t use them', () => {
+    expect(content.hasTurnUpCard).toBe(false);
+    expect(content.dixPoints).toBeUndefined();
   });
 
   it('mirrors the scoring constants from the ruleset exactly', () => {
@@ -84,5 +90,24 @@ describe('buildHelpSheetContent', () => {
     const tweakedContent = buildHelpSheetContent(tweaked);
     expect(tweakedContent.rubiconThreshold).toBe(2000);
     expect(tweakedContent.gameBonus).toBe(999);
+  });
+});
+
+describe('buildHelpSheetContent: Classic Bezique', () => {
+  const content = buildHelpSheetContent(classicBezique);
+
+  it('reports the turn-up card and dix point value', () => {
+    expect(content.hasTurnUpCard).toBe(true);
+    expect(content.dixPoints).toBe(10);
+  });
+
+  it('omits the carte blanche note entirely (carteBlanchePoints is 0)', () => {
+    expect(content.carteBlanchePoints).toBe(0);
+  });
+
+  it('lists no Triple/Quadruple Bezique or plain-suit Sequence rows', () => {
+    const kinds = new Set(content.meldTable.map((r) => r.kind));
+    expect(kinds.has('tripleBezique')).toBe(false);
+    expect(kinds.has('quadrupleBezique')).toBe(false);
   });
 });

@@ -343,6 +343,20 @@ h1 {
   gap: 0.5rem;
 }
 
+/* Classic Bezique only: the card turned up at the deal to set trumps, shown separately from
+   the stock/trick since it sits on the table on its own until claimed via the dix exchange. */
+.turn-up-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.turn-up-card-label {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
 .trick {
   display: flex;
   gap: 1.5rem;

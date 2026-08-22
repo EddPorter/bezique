@@ -193,9 +193,14 @@ function speculativeMeldValue(state: GameState, playerId: PlayerId, card: Card):
     // suit, not an arbitrary/undefined one — passing undefined would make every slot's suit
     // undefined too, so it could never match a real hand card and would silently always
     // contribute zero. With no trump set yet, there's nothing valid to check at all.
+    // Classic Bezique's trumpOnly Sequence (docs/classic-bezique-rules-spec.md §6): a card
+    // outside the current trump suit has no real speculative sequence value at all — there's
+    // no plain-suit version to eventually declare, unlike Rubicon/Chinese Bezique.
     const suitsToCheck =
       def.class === 'sequence'
-        ? [card.suit]
+        ? def.trumpOnly && card.suit !== state.trumpSuit
+          ? []
+          : [card.suit]
         : def.suitScope === 'trump'
           ? state.trumpSuit !== null
             ? [state.trumpSuit]

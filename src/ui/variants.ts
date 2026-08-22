@@ -1,4 +1,4 @@
-import { chineseBezique, rubiconBezique } from '../engine/index.js';
+import { classicBezique, chineseBezique, rubiconBezique } from '../engine/index.js';
 import type { Ruleset } from '../engine/types.js';
 
 export interface VariantOption {
@@ -11,4 +11,5 @@ export interface VariantOption {
 export const VARIANTS: VariantOption[] = [
   { name: 'Rubicon Bezique', ruleset: rubiconBezique },
   { name: 'Chinese Bezique', ruleset: chineseBezique },
+  { name: 'Classic Bezique', ruleset: classicBezique },
 ];

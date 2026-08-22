@@ -29,6 +29,10 @@ export interface HelpSheetContent {
   lastTrickBonus: number;
   brisqueValue: number;
   carteBlanchePoints: number;
+  /** Classic Bezique only (docs/classic-bezique-rules-spec.md §1/§2): the turned-up trump
+   * card, and the dix (7 of trumps) point value. Undefined for rulesets with no dix at all. */
+  hasTurnUpCard: boolean;
+  dixPoints?: number;
 }
 
 /** Marriage/sequence apply to any suit — shown with this one as a concrete example. */
@@ -40,21 +44,25 @@ function formatCards(ruleset: Ruleset, kind: MeldKind): { cards: string; suitNot
   const def = ruleset.meldTable[kind]!;
   const isSuitParameterized = def.class === 'sequence';
   const isTrumpScoped = def.class !== 'sequence' && def.suitScope === 'trump';
+  const isTrumpOnlySequence = def.class === 'sequence' && def.trumpOnly === true;
   const slots = requiredSlots(ruleset, kind, isSuitParameterized || isTrumpScoped ? REPRESENTATIVE_SUIT : undefined);
   const cards = slots.map((s) => `${s.rank}${SUIT_SYMBOL[s.suit]}`).join(' ');
   return {
     cards,
-    suitNote: isSuitParameterized
-      ? 'shown in spades — any suit qualifies; trumps score more'
-      : isTrumpScoped
-        ? 'shown in spades — actually whichever suit is currently trump'
-        : undefined,
+    suitNote: isTrumpOnlySequence
+      ? 'shown in spades — actually whichever suit is currently trump; no plain-suit version exists'
+      : isSuitParameterized
+        ? 'shown in spades — any suit qualifies; trumps score more'
+        : isTrumpScoped
+          ? 'shown in spades — actually whichever suit is currently trump'
+          : undefined,
   };
 }
 
 function formatPoints(ruleset: Ruleset, kind: MeldKind): string {
   const def = ruleset.meldTable[kind]!;
-  return def.class === 'sequence' ? `${def.trumpPoints} trump / ${def.plainPoints} plain` : `${def.points}`;
+  if (def.class !== 'sequence') return `${def.points}`;
+  return def.trumpOnly ? `${def.trumpPoints} (trumps only)` : `${def.trumpPoints} trump / ${def.plainPoints} plain`;
 }
 
 /**
@@ -102,5 +110,7 @@ export function buildHelpSheetContent(ruleset: Ruleset): HelpSheetContent {
     lastTrickBonus: ruleset.lastTrickBonus,
     brisqueValue: ruleset.brisqueValue,
     carteBlanchePoints: ruleset.carteBlanchePoints,
+    hasTurnUpCard: ruleset.trumpDetermination === 'turnedUpCard',
+    ...(ruleset.dix ? { dixPoints: ruleset.dix.points } : {}),
   };
 }

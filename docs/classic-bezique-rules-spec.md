@@ -118,3 +118,28 @@ What's genuinely new, not just config:
 - **No "only count brisques to break a tie" restriction** — brisques would need to count toward every deal's score unconditionally, which the current `finalizeScoring` doesn't support as a ruleset-level toggle.
 
 This document deliberately stops at research — no plan for the above is proposed here.
+
+## 8. Addendum: the odd stock (found during implementation, 2026-08-22)
+
+Not part of the original research pass — surfaced by a random-play stress test once Classic
+Bézique was actually implemented and wired up, the same kind already used for Rubicon and
+Chinese Bézique.
+
+With 64 total cards, 8 dealt to each of 2 players (16), and 1 more turned up as trump (§1),
+the remaining stock is 64 − 16 − 1 = **47 cards — an odd number**. Every other implemented
+variant's stock happens to be even (Rubicon: 128 − 18 = 110; Chinese: 192 − 24 = 168), so this
+specific case was never exercised before. Since players draw one card each per trick (winner
+then loser), an odd stock leaves exactly one card that can't be evenly split at the very end
+of the drawing phase.
+
+This turns out to be directly answered by the same primary source already cited throughout
+this document. Hoyle's Games Modernized, "THE LAWS OF RUBICON BÉZIQUE" (Drawing), **Law 32**:
+
+> "If there be an odd number of cards in the stock, the last card is not drawn."
+
+That law is scoped to the Rubicon Bézique section specifically (where it's a dead rule in
+practice, since Rubicon's own stock is always even) — but it describes the same physical
+draw mechanic (winner draws, then loser draws, one card each) that Classic Bézique itself
+uses, from the same source, so it applies here directly rather than needing a separate
+invented house rule. Implemented in `drawStockForBothPlayers` (`src/engine/moves.ts`): once
+fewer than 2 cards remain in the stock, nobody draws — the lone card is simply left aside.
