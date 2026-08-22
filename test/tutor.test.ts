@@ -258,4 +258,62 @@ describe('getTutorAdvice', () => {
       expect(advice.ranked[i - 1]!.breakdown.total).toBeGreaterThanOrEqual(advice.ranked[i]!.breakdown.total);
     }
   });
+
+  describe('declareDix (Classic Bezique only)', () => {
+    const dixRuleset = { ...rubiconBezique, trumpDetermination: 'turnedUpCard' as const, dix: { points: 10 } };
+
+    it('recommends exchanging the dix for the turn-up card, with points named in the explanation', () => {
+      const state = makeState({
+        ruleset: dixRuleset,
+        stage: 'awaitingMeldDecision',
+        turn: 0,
+        trumpSuit: 'S',
+        turnUpCard: c('SK-0', 'S', 'K'),
+        players: [
+          { id: 0, hand: [c('S7-0', 'S', '7'), c('H9-0', 'H', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+          { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        ],
+      });
+      const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+      expect(advice.move.type).toBe('declareDix');
+      expect(advice.explanation).toMatch(/exchange/i);
+      expect(advice.explanation).toContain('10');
+    });
+
+    it('recommends declaring the dix without exchange wording once the turn-up card is already gone', () => {
+      const state = makeState({
+        ruleset: dixRuleset,
+        stage: 'awaitingMeldDecision',
+        turn: 0,
+        trumpSuit: 'S',
+        turnUpCard: null,
+        players: [
+          { id: 0, hand: [c('S7-0', 'S', '7'), c('H9-0', 'H', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+          { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        ],
+      });
+      const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+      expect(advice.move.type).toBe('declareDix');
+      expect(advice.explanation).not.toMatch(/exchange/i);
+      expect(advice.explanation).toContain('10');
+    });
+
+    it('explains why passing leaves the dix undeclared', () => {
+      const state = makeState({
+        ruleset: dixRuleset,
+        stage: 'awaitingMeldDecision',
+        turn: 0,
+        trumpSuit: 'S',
+        turnUpCard: null,
+        players: [
+          { id: 0, hand: [c('S7-0', 'S', '7'), c('H9-0', 'H', '9')], melds: [], score: 0, carteBlanchePoints: 0 },
+          { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+        ],
+      });
+      const advice = getTutorAdvice(state, 0, getLegalMoves(state, 0))!;
+      const passAlternative = advice.alternatives.find((a) => a.move.type === 'pass');
+      expect(passAlternative).toBeDefined();
+      expect(passAlternative!.reason).toMatch(/10 points undeclared/);
+    });
+  });
 });

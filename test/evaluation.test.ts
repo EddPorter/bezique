@@ -57,6 +57,23 @@ describe('evaluateMove: declareMeld', () => {
   });
 });
 
+describe('evaluateMove: declareDix (Classic Bezique only)', () => {
+  it('scores meldProgress equal to the ruleset dix points, and dings informationGivenAway', () => {
+    const dixRuleset = { ...rubiconBezique, trumpDetermination: 'turnedUpCard' as const, dix: { points: 10 } };
+    const state = makeState({
+      ruleset: dixRuleset,
+      players: [
+        { id: 0, hand: [c('S7-0', 'S', '7')], melds: [], score: 0, carteBlanchePoints: 0 },
+        { id: 1, hand: [], melds: [], score: 0, carteBlanchePoints: 0 },
+      ],
+    });
+    const move = { type: 'declareDix' as const, playerId: 0 as const, cardId: 'S7-0' };
+    const result = evaluateMove(state, 0, move, UNIT_WEIGHTS);
+    expect(result.meldProgress).toBe(10);
+    expect(result.informationGivenAway).toBeLessThan(0);
+  });
+});
+
 describe('evaluateMove: pass', () => {
   it('penalizes passing when a real meld option is available', () => {
     const state = makeState({
