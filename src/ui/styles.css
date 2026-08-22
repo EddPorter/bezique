@@ -343,8 +343,17 @@ h1 {
   gap: 0.5rem;
 }
 
-/* Classic Bezique only: the card turned up at the deal to set trumps, shown separately from
-   the stock/trick since it sits on the table on its own until claimed via the dix exchange. */
+/* Turn-up card (Classic Bezique only) sits on the same row as the trick, to its left — the
+   deal's static, established-once context (trumps were set from it before any trick began)
+   read before the live, changing action to its right. */
+.table-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
 .turn-up-card {
   display: flex;
   flex-direction: column;

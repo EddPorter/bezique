@@ -123,13 +123,15 @@ export function App() {
           </section>
 
           <section className="middle-area">
-            {state.turnUpCard && (
-              <div className="turn-up-card">
-                <span className="turn-up-card-label">Turn-up</span>
-                <Card card={state.turnUpCard} />
-              </div>
-            )}
-            <Trick trick={state.currentTrick} completedTrick={completedTrick} humanId={HUMAN_ID} />
+            <div className="table-row">
+              {state.turnUpCard && (
+                <div className="turn-up-card">
+                  <span className="turn-up-card-label">Turn-up</span>
+                  <Card card={state.turnUpCard} />
+                </div>
+              )}
+              <Trick trick={state.currentTrick} completedTrick={completedTrick} humanId={HUMAN_ID} />
+            </div>
             <AnimatePresence>
               {opponentThinking && (
                 <motion.p
