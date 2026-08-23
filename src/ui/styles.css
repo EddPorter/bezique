@@ -350,7 +350,10 @@ h1 {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: 1.5rem;
+  /* Deliberately wider than .trick's own internal card-to-card gap below — otherwise, with
+     both trick cards showing, all three cards read as one evenly-spaced group instead of a
+     single turn-up card clearly separate from the (up to two-card) trick beside it. */
+  gap: 3.5rem;
   width: 100%;
 }
 
@@ -361,9 +364,15 @@ h1 {
   gap: 0.3rem;
 }
 
+/* Deliberately NOT .trick-label's styling (sentence case, no letter-spacing) — that style
+   reads as "who played this card", which the turn-up card isn't. Matches the app's other
+   section-label pattern (.scoreboard-label, .meld-display-label) instead, so it reads as a
+   standing table marker distinct from the trick's own per-card attribution labels. */
 .turn-up-card-label {
-  font-size: 0.72rem;
-  opacity: 0.8;
+  font-size: 0.68rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .trick {
