@@ -180,6 +180,10 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.scoreboard-value[data-red='true'] {
+  color: #e8a3a3;
+}
+
 .scoreboard-sub {
   font-size: 0.68rem;
   opacity: 0.55;

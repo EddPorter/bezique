@@ -1,6 +1,7 @@
 import { animate } from 'framer-motion';
 import { useEffect, useRef } from 'react';
-import { isBrisqueCard } from '../../engine/cards.js';
+import { isRedSuit } from './Card.js';
+import { isBrisqueCard, SUIT_SYMBOL } from '../../engine/cards.js';
 import type { MatchState } from '../../engine/match.js';
 import type { GameState, PlayerId } from '../../engine/types.js';
 import { AI_ID, HUMAN_ID } from '../playerIds.js';
@@ -76,7 +77,9 @@ export function ScoreBoard({ state, match }: { state: GameState; match: MatchSta
       )}
       <div className="scoreboard-item">
         <span className="scoreboard-label">Trumps</span>
-        <span className="scoreboard-value">{state.trumpSuit ?? '—'}</span>
+        <span className="scoreboard-value" data-red={state.trumpSuit ? isRedSuit(state.trumpSuit) : false}>
+          {state.trumpSuit ? SUIT_SYMBOL[state.trumpSuit] : '—'}
+        </span>
       </div>
       <div className="scoreboard-item">
         <span className="scoreboard-label">Stock</span>
