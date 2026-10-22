@@ -50,4 +50,6 @@ The Rubicon rules follow the 1887 Portland Club code (via *Hoyle's Games Moderni
 
 ## Licence
 
-Copyright (c) 2026 Edd Porter. All rights reserved. The source is public for viewing only; use, copying, modification or distribution requires prior explicit written permission. See [`LICENSE`](LICENSE).
+The source code and documentation are licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for personal, educational and other noncommercial use, but not for commercial use. For a commercial licence, contact the author via their [GitHub profile](https://github.com/EddPorter).
+
+The "Bezique" name and the logo are not covered by that licence and are reserved.

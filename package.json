@@ -22,7 +22,7 @@
     "url": "https://github.com/EddPorter/bezique/issues"
   },
   "author": "Edd Porter",
-  "license": "UNLICENSED",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
