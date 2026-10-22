@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#0f4029" />
-  <text x="12" y="21" font-family="Georgia, 'Times New Roman', serif" font-size="19" font-weight="700" fill="#f4ecd8" text-anchor="middle">&#9824;</text>
-  <text x="22" y="27" font-family="Georgia, 'Times New Roman', serif" font-size="13" font-weight="700" fill="#c9433c" text-anchor="middle">&#9830;</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bezique">
+  <title>Bezique</title>
+  <rect width="512" height="512" rx="112" fill="#0f4029"/>
+  <path fill="#f4ecd8" fill-rule="evenodd" d="M112 80 H268 C340 80 384 114 384 170 C384 206 366 230 336 242 C378 254 408 282 408 336 C408 392 364 432 288 432 H112 Z M 262.0 126.0 C 284.0 146.0 310.0 162.0 310.0 184.0 C 310.0 202.0 296.0 212.0 282.0 212.0 C 274.0 212.0 268.0 209.0 265.0 204.0 C 266.0 216.0 271.0 226.0 280.0 232.0 L 244.0 232.0 C 253.0 226.0 258.0 216.0 259.0 204.0 C 256.0 209.0 250.0 212.0 242.0 212.0 C 228.0 212.0 214.0 202.0 214.0 184.0 C 214.0 162.0 240.0 146.0 262.0 126.0 Z M 268.0 286.0 L 312.0 342.0 L 268.0 398.0 L 224.0 342.0 Z"/>
+  <path fill="#c9433c" d="M 268.0 286.0 L 312.0 342.0 L 268.0 398.0 L 224.0 342.0 Z"/>
 </svg>

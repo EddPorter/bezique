@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo/logo-lockup.svg" alt="Bezique" width="480"></p>
+
 # Bezique
 
 A single-player [Bezique](https://en.wikipedia.org/wiki/B%C3%A9zique) card game that runs entirely in the browser, with computer opponents of three abilities and an optional tutor that explains its move recommendations.
