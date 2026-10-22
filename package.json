@@ -2,6 +2,27 @@
   "name": "bezique",
   "private": true,
   "version": "0.0.1",
+  "description": "A single-player Bezique card game for the browser, with computer opponents and an optional tutor that explains its moves.",
+  "keywords": [
+    "bezique",
+    "rubicon-bezique",
+    "card-game",
+    "game",
+    "tutor",
+    "react",
+    "typescript",
+    "vite"
+  ],
+  "homepage": "https://eddporter.github.io/bezique/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EddPorter/bezique.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EddPorter/bezique/issues"
+  },
+  "author": "Edd Porter",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
