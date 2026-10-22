@@ -22,6 +22,7 @@
     "url": "https://github.com/EddPorter/bezique/issues"
   },
   "author": "Edd Porter",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",

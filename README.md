@@ -47,3 +47,7 @@ Pushes to `main` are type-checked, tested, built and published to GitHub Pages b
 ## Rules sources
 
 The Rubicon rules follow the 1887 Portland Club code (via *Hoyle's Games Modernized*), cross-checked against Pagat.com; full citations are in the rules specifications under `docs/`.
+
+## Licence
+
+Copyright (c) 2026 Edd Porter. All rights reserved. The source is public for viewing only; use, copying, modification or distribution requires prior explicit written permission. See [`LICENSE`](LICENSE).
